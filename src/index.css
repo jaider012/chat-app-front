@@ -6,30 +6,30 @@
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-gray-200;
   }
   
   body {
-    @apply bg-background-light text-text-primary-light font-sans;
+    @apply bg-background-light text-primary font-sans;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
   
   h1, h2, h3, h4, h5, h6 {
-    @apply font-header font-header;
+    @apply font-header font-bold;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+    @apply bg-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-opacity-90 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
   }
   
   .btn-secondary {
-    @apply bg-secondary text-white px-6 py-3 rounded-lg font-medium hover:bg-secondary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2;
+    @apply bg-secondary text-white px-6 py-3 rounded-lg font-medium hover:bg-opacity-90 transition-colors focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2;
   }
   
   .btn-accent {
-    @apply bg-accent text-white px-6 py-3 rounded-lg font-medium hover:bg-accent/90 transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2;
+    @apply bg-accent text-white px-6 py-3 rounded-lg font-medium hover:bg-opacity-90 transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2;
   }
   
   .input-field {
@@ -41,7 +41,7 @@
   }
   
   .chat-bubble-received {
-    @apply bg-gray-100 text-text-primary-light rounded-lg px-4 py-2 mr-auto max-w-xs shadow-sm;
+    @apply bg-gray-100 text-primary rounded-lg px-4 py-2 mr-auto max-w-xs shadow-sm;
   }
   
   .status-online {
@@ -61,7 +61,7 @@
   }
   
   .conversation-item-selected {
-    @apply bg-tertiary/10 border-r-4 border-tertiary;
+    @apply bg-tertiary bg-opacity-10 border-r-4 border-tertiary;
   }
   
   .modal-overlay {

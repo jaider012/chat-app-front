@@ -1,0 +1,323 @@
+{
+  "project": "1-on-1 Chat App",
+  "version": "1.1",
+  "colorPalette": {
+    "primary": {
+      "name": "Deep Blue",
+      "hex": "#253659",
+      "description": "Use for main text, headers, primary button backgrounds, and important UI elements."
+    },
+    "secondary": {
+      "name": "Vibrant Teal",
+      "hex": "#03A696",
+      "description": "Use for accents, active icons, 'online' status indicators, and secondary action buttons."
+    },
+    "accent": {
+      "name": "Bright Orange",
+      "hex": "#F27457",
+      "description": "Reserved for important calls-to-action (CTAs), notifications, and unread message counters."
+    },
+    "tertiary": {
+      "name": "Muted Teal",
+      "hex": "#04BF9D",
+      "description": "Use for hover states on secondary elements or as a subtle background color to highlight sections."
+    },
+    "error": {
+      "name": "Soft Red",
+      "hex": "#BF665E",
+      "description": "Use for error messages, validation alerts, and failure notifications."
+    },
+    "background": {
+      "light": "#F7F9FB",
+      "dark": "#1A2238"
+    },
+    "text": {
+      "primary_light": "#253659",
+      "primary_dark": "#FFFFFF",
+      "secondary_light": "#6B7280",
+      "secondary_dark": "#A0AEC0"
+    }
+  },
+  "typography": {
+    "fontFamily": "'Inter', sans-serif",
+    "headers": {
+      "fontFamily": "'Lexend', sans-serif",
+      "fontWeight": "700"
+    }
+  },
+  "technicalSpecifications": {
+    "baseUrl": "/api",
+    "authentication": {
+      "type": "JWT",
+      "provider": "Google OAuth 2.0"
+    },
+    "rateLimit": {
+      "global": "100 requests/minute",
+      "googleAuth": "10 requests/minute",
+      "sendMessage": "30 messages/minute"
+    },
+    "cors": {
+      "enabled": true,
+      "origin": "Configurable via FRONTEND_URL env variable"
+    }
+  },
+  "screens": [
+    {
+      "screenName": "Login Screen",
+      "purpose": "To authenticate the user simply and securely via Google.",
+      "keyElements": [
+        { "name": "App Logo", "desc": "Centered and prominent." },
+        {
+          "name": "Slogan/Tagline",
+          "desc": "Short and catchy phrase below the logo."
+        },
+        {
+          "name": "'Sign in with Google' Button",
+          "desc": "The only CTA on the screen, large and clear, with the official Google logo."
+        }
+      ],
+      "uiStyle": "Minimalist, centered, and distraction-free. The background can have a subtle gradient using 'primary' and 'background.dark'.",
+      "animations": [
+        {
+          "event": "onLoad",
+          "effect": "Elements appear with a soft 'fade-in' and a slight upward shift."
+        },
+        {
+          "event": "onButtonClick",
+          "effect": "The button scales down slightly (98%) and shows a spinner while authentication is processing."
+        }
+      ],
+      "accessibility": "The button must be focusable with the keyboard and activatable with 'Enter'. Text contrast must be AAA.",
+      "apiEndpoints": [
+        {
+          "name": "googleAuth",
+          "method": "GET",
+          "url": "/api/auth/google",
+          "description": "Redirects the user to the Google OAuth consent screen to initiate the login flow."
+        },
+        {
+          "name": "googleCallback",
+          "method": "GET",
+          "url": "/api/auth/google/callback",
+          "description": "Endpoint that Google redirects to after user consent. The frontend does not call this directly but must handle the final redirect from the server which contains the JWT."
+        }
+      ]
+    },
+    {
+      "screenName": "Dashboard / Conversation List",
+      "purpose": "To show the user all their active conversations and allow them to start new ones.",
+      "keyElements": [
+        {
+          "name": "Header",
+          "desc": "With the logo, the user's avatar (profile/logout menu), and an icon to start a new conversation."
+        },
+        { "name": "Search Bar", "desc": "To filter existing conversations." },
+        {
+          "name": "Conversation List",
+          "desc": "Each item shows the contact's avatar, name, last message, and an unread counter."
+        },
+        {
+          "name": "Empty State",
+          "desc": "Friendly message and illustration when there are no conversations. Includes a 'Start Chatting' button."
+        }
+      ],
+      "uiStyle": "Clean and organized. The selected conversation is highlighted with a lighter version of the 'tertiary' color as a background.",
+      "animations": [
+        {
+          "event": "onNewMessage",
+          "effect": "The unread counter ('accent' color) appears with a pulse. The conversation moves to the top of the list."
+        },
+        {
+          "event": "onHoverConversation",
+          "effect": "The list item subtly brightens."
+        }
+      ],
+      "accessibility": "The list must be navigable with arrow keys. The search bar must be accessible.",
+      "apiEndpoints": [
+        {
+          "name": "getConversations",
+          "method": "GET",
+          "url": "/api/conversations",
+          "description": "Fetches the list of all conversations for the authenticated user.",
+          "authentication": "JWT required"
+        }
+      ],
+      "socketEvents": [
+        {
+          "event": "connect",
+          "direction": "N/A",
+          "description": "Establishes the main WebSocket connection, authenticating with the JWT in the handshake."
+        }
+      ]
+    },
+    {
+      "screenName": "Active Chat Window",
+      "purpose": "To allow fluid, real-time communication between two users.",
+      "keyElements": [
+        {
+          "name": "Chat Header",
+          "desc": "Contact's avatar and name, with a status indicator ('online' with 'secondary' color)."
+        },
+        {
+          "name": "Message Area",
+          "desc": "Reverse infinite scroll. Differentiated chat bubbles."
+        },
+        {
+          "name": "Message Bubble (Sent)",
+          "desc": "Right-aligned, with a 'primary' color background and white text."
+        },
+        {
+          "name": "Message Bubble (Received)",
+          "desc": "Left-aligned, with a light gray background and 'text.primary_light' color text."
+        },
+        {
+          "name": "Input Field",
+          "desc": "Expandable text input with a send button (icon)."
+        },
+        {
+          "name": "'Typing...' Indicator",
+          "desc": "Appears in the header or above the input field."
+        }
+      ],
+      "uiStyle": "Focused on the content. Chat bubbles should have rounded corners and subtle shadows to add depth.",
+      "animations": [
+        {
+          "event": "onNewMessageReceived",
+          "effect": "The new bubble appears by sliding up and fading in."
+        },
+        {
+          "event": "onTypingIndicator",
+          "effect": "Animation of three pulsing dots."
+        }
+      ],
+      "accessibility": "The message area should be a live region (aria-live='polite'). The input field must have a clear label.",
+      "apiEndpoints": [
+        {
+          "name": "getMessages",
+          "method": "GET",
+          "url": "/api/conversations/:id/messages",
+          "description": "Fetches the message history for a specific conversation, with pagination.",
+          "authentication": "JWT required"
+        }
+      ],
+      "socketEvents": [
+        {
+          "event": "sendMessage",
+          "direction": "emit",
+          "payload": "{ conversationId, content }",
+          "description": "Sends a new message to the server."
+        },
+        {
+          "event": "newMessage",
+          "direction": "listen",
+          "payload": "{ messageObject }",
+          "description": "Receives a new message from the server."
+        },
+        {
+          "event": "startTyping",
+          "direction": "emit",
+          "payload": "{ conversationId }",
+          "description": "Notifies the server that the user is typing."
+        },
+        {
+          "event": "stopTyping",
+          "direction": "emit",
+          "payload": "{ conversationId }",
+          "description": "Notifies the server that the user has stopped typing."
+        },
+        {
+          "event": "userTyping",
+          "direction": "listen",
+          "payload": "{ userId }",
+          "description": "Receives notification that the other user is typing."
+        },
+        {
+          "event": "userStoppedTyping",
+          "direction": "listen",
+          "payload": "{ userId }",
+          "description": "Receives notification that the other user stopped typing."
+        }
+      ]
+    },
+    {
+      "screenName": "Modal / User Search",
+      "purpose": "To search for other registered users on the platform to start a new conversation.",
+      "keyElements": [
+        {
+          "name": "Search Field",
+          "desc": "Automatically focused when the modal opens."
+        },
+        {
+          "name": "Results List",
+          "desc": "Shows avatars and names of matching users. Updates in real-time."
+        },
+        {
+          "name": "Loading/No Results State",
+          "desc": "Shows a spinner or a clear message."
+        }
+      ],
+      "uiStyle": "An overlay modal that blurs the background to focus attention. Simple and functional design.",
+      "animations": [
+        {
+          "event": "onModalOpen",
+          "effect": "The modal appears with a scale and fade-in animation."
+        },
+        {
+          "event": "onResultsUpdate",
+          "effect": "Results appear in the list without reloading the entire view."
+        }
+      ],
+      "accessibility": "Keyboard focus must be trapped within the modal ('focus trap'). It can be closed with the 'Escape' key.",
+      "apiEndpoints": [
+        {
+          "name": "getUsers",
+          "method": "GET",
+          "url": "/api/users",
+          "description": "Fetches a list of all users to start a new conversation.",
+          "authentication": "JWT required"
+        },
+        {
+          "name": "createConversation",
+          "method": "POST",
+          "url": "/api/conversations",
+          "description": "Creates or retrieves an existing conversation with a selected user.",
+          "body": "{ participantId }",
+          "authentication": "JWT required"
+        }
+      ]
+    },
+    {
+      "screenName": "Profile Screen",
+      "purpose": "To allow the user to view their own profile information.",
+      "keyElements": [
+        { "name": "User Avatar", "desc": "Large, centered profile picture." },
+        {
+          "name": "User Name",
+          "desc": "Full name displayed prominently below avatar."
+        },
+        {
+          "name": "User Email",
+          "desc": "Email address associated with the account."
+        },
+        {
+          "name": "Logout Button",
+          "desc": "A clear button to sign out of the application."
+        }
+      ],
+      "uiStyle": "Clean and simple, consistent with the rest of the app's design. Could be a full screen or a modal.",
+      "animations": [
+        { "event": "onLoad", "effect": "Profile details fade in smoothly." }
+      ],
+      "accessibility": "All elements should be clearly labeled. Logout button must be easily accessible.",
+      "apiEndpoints": [
+        {
+          "name": "getProfile",
+          "method": "GET",
+          "url": "/api/users/me",
+          "description": "Fetches the profile information for the currently authenticated user.",
+          "authentication": "JWT required"
+        }
+      ]
+    }
+  ]
+}
