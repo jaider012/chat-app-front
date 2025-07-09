@@ -5,6 +5,7 @@ import { SocketProvider } from './contexts/SocketContext';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import TestAuthPage from './pages/TestAuthPage';
+import DebugChatPage from './pages/DebugChatPage';
 import { getTokenFromUrl, clearTokenFromUrl } from './utils/auth';
 
 const AuthCallback: React.FC = () => {
@@ -97,6 +98,7 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route path="/test-auth" element={<TestAuthPage />} />
+        <Route path="/debug-chat" element={<DebugChatPage />} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

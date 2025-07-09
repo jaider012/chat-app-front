@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send } from 'lucide-react';
 import type { ChatWindowProps } from '../types';
 import { formatDistanceToNow } from 'date-fns';
+import { getUserDisplayName } from '../utils/dataHelpers';
 
 const ChatWindow: React.FC<ChatWindowProps> = ({
   conversation,
@@ -36,10 +37,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (messageInput.trim() && onSendMessage) {
-      onSendMessage(messageInput.trim());
-      setMessageInput('');
-      handleStopTyping();
+    try {
+      if (messageInput.trim() && onSendMessage) {
+        onSendMessage(messageInput.trim());
+        setMessageInput('');
+        handleStopTyping();
+      }
+    } catch (error) {
+      console.error('Error in handleSendMessage:', error);
     }
   };
 
@@ -78,20 +83,32 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   };
 
+  // Verify that we have the necessary data
+  if (!conversation || !currentUser) {
+    console.error('ChatWindow: Missing required props', { conversation, currentUser });
+    return (
+      <div className="flex-1 flex items-center justify-center bg-white">
+        <div className="text-center">
+          <p className="text-red-500">Missing conversation or user data</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full bg-white">
       <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
         <div className="flex items-center space-x-3">
           <div className="relative">
             <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-medium">
-              {otherParticipant?.name?.[0]?.toUpperCase() || 'U'}
+              {getUserDisplayName(otherParticipant)[0]?.toUpperCase() || 'U'}
             </div>
             {otherParticipant?.isOnline && (
               <div className="absolute bottom-0 right-0 status-online ring-2 ring-white"></div>
             )}
           </div>
           <div>
-            <h2 className="font-medium text-gray-900">{otherParticipant?.name || 'Unknown User'}</h2>
+            <h2 className="font-medium text-gray-900">{getUserDisplayName(otherParticipant)}</h2>
             <p className="text-sm text-gray-500">
               {otherParticipant?.isOnline ? 'Online' : 'Offline'}
             </p>
@@ -100,8 +117,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => {
-          const isOwnMessage = message.senderId === currentUser.id;
+        {messages && messages.length > 0 ? messages.map((message) => {
+          if (!message || !message.id) return null;
+          
+          const isOwnMessage = (message.senderId || message.sender?.id) === currentUser.id;
           
           return (
             <div
@@ -117,12 +136,19 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   <p className="text-sm">{message.content}</p>
                 </div>
                 <div className={`text-xs text-gray-500 mt-1 ${isOwnMessage ? 'text-right' : 'text-left'}`}>
-                  {message.timestamp ? formatDistanceToNow(new Date(message.timestamp), { addSuffix: true }) : 'Just now'}
+                  {(message.timestamp || message.createdAt) ? 
+                    formatDistanceToNow(new Date(message.timestamp || message.createdAt), { addSuffix: true }) : 
+                    'Just now'
+                  }
                 </div>
               </div>
             </div>
           );
-        })}
+        }) : (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-gray-500">No messages yet</p>
+          </div>
+        )}
         
         {isTyping && (
           <div className="flex justify-start animate-slide-up">

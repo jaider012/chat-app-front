@@ -1,27 +1,35 @@
 export interface User {
   id: string;
   email: string;
-  name: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  profilePicture?: string;
   avatar?: string;
   isOnline?: boolean;
+  createdAt?: string;
 }
 
 export interface Message {
   id: string;
   content: string;
-  senderId: string;
-  receiverId: string;
-  conversationId: string;
-  timestamp: string;
-  isRead: boolean;
+  senderId?: string;
+  receiverId?: string;
+  conversationId?: string;
+  timestamp?: string;
+  isRead?: boolean;
+  sender?: User;
+  createdAt?: string;
 }
 
 export interface Conversation {
   id: string;
+  name?: string;
   participants: User[];
   lastMessage?: Message;
-  unreadCount: number;
-  updatedAt: string;
+  unreadCount?: number;
+  updatedAt?: string;
+  createdAt?: string;
 }
 
 export interface AuthState {

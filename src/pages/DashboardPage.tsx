@@ -4,9 +4,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../contexts/SocketContext';
 import type { Conversation, Message } from '../types';
 import { apiService } from '../services/api';
+import { mockConversations, getMessagesByConversationId } from '../utils/mockData';
+import { normalizeConversation, normalizeMessage } from '../utils/dataHelpers';
 import ConversationList from '../components/ConversationList';
 import ChatWindow from '../components/ChatWindow';
-
+import ErrorBoundary from '../components/ErrorBoundary';
 import UserSearchModal from '../components/UserSearchModal';
 import ProfileModal from '../components/ProfileModal';
 
@@ -28,14 +30,40 @@ const DashboardPage: React.FC = () => {
 
   useEffect(() => {
     if (socket) {
-      socket.on('newMessage', handleNewMessage);
-      socket.on('userTyping', handleUserTyping);
-      socket.on('userStoppedTyping', handleUserStoppedTyping);
+      console.log('Setting up socket listeners');
+      
+      const wrappedHandleNewMessage = (message: Message) => {
+        try {
+          handleNewMessage(message);
+        } catch (error) {
+          console.error('Error in newMessage handler:', error);
+        }
+      };
+      
+      const wrappedHandleUserTyping = (data: { userId: string }) => {
+        try {
+          handleUserTyping(data);
+        } catch (error) {
+          console.error('Error in userTyping handler:', error);
+        }
+      };
+      
+      const wrappedHandleUserStoppedTyping = (data: { userId: string }) => {
+        try {
+          handleUserStoppedTyping(data);
+        } catch (error) {
+          console.error('Error in userStoppedTyping handler:', error);
+        }
+      };
+
+      socket.on('newMessage', wrappedHandleNewMessage);
+      socket.on('userTyping', wrappedHandleUserTyping);
+      socket.on('userStoppedTyping', wrappedHandleUserStoppedTyping);
 
       return () => {
-        socket.off('newMessage', handleNewMessage);
-        socket.off('userTyping', handleUserTyping);
-        socket.off('userStoppedTyping', handleUserStoppedTyping);
+        socket.off('newMessage', wrappedHandleNewMessage);
+        socket.off('userTyping', wrappedHandleUserTyping);
+        socket.off('userStoppedTyping', wrappedHandleUserStoppedTyping);
       };
     }
   }, [socket, selectedConversationId]);
@@ -48,12 +76,22 @@ const DashboardPage: React.FC = () => {
 
   const loadConversations = async () => {
     try {
+      console.log('Loading conversations...');
       const response = await apiService.getConversations();
+      console.log('API response:', response);
+      
       if (response.success && response.data) {
-        setConversations(response.data);
+        console.log('Using real API data');
+        const normalizedConversations = response.data.map(normalizeConversation);
+        setConversations(normalizedConversations);
+      } else {
+        console.warn('API not available, using mock data');
+        setConversations(mockConversations);
       }
     } catch (error) {
       console.error('Error loading conversations:', error);
+      console.warn('Using mock data instead');
+      setConversations(mockConversations);
     } finally {
       setIsLoading(false);
     }
@@ -63,31 +101,70 @@ const DashboardPage: React.FC = () => {
     try {
       console.log('Loading messages for conversation:', conversationId);
       const response = await apiService.getMessages(conversationId);
-      console.log('Messages response:', response);
+      console.log('Messages API response:', response);
+      
       if (response.success && response.data) {
-        setMessages(response.data);
+        // La API devuelve { items: [...], meta: {...} }
+        const messagesData = response.data.items || response.data;
+        const normalizedMessages = Array.isArray(messagesData) 
+          ? messagesData.map(normalizeMessage)
+          : [];
+        
+        // Ordenar mensajes por timestamp (más antiguo al inicio, más reciente al final)
+        const sortedMessages = normalizedMessages.sort((a, b) => {
+          const timeA = new Date(a.timestamp || a.createdAt || 0).getTime();
+          const timeB = new Date(b.timestamp || b.createdAt || 0).getTime();
+          return timeA - timeB;
+        });
+        
+        console.log('Using real API messages:', sortedMessages);
+        setMessages(sortedMessages);
       } else {
-        console.error('Failed to load messages:', response.message);
-        setMessages([]);
+        console.warn('API not available for messages, using mock data');
+        const conversationMessages = getMessagesByConversationId(conversationId);
+        setMessages(conversationMessages);
       }
     } catch (error) {
       console.error('Error loading messages:', error);
-      setMessages([]);
+      console.warn('Using mock messages instead');
+      const conversationMessages = getMessagesByConversationId(conversationId);
+      setMessages(conversationMessages);
     }
   };
 
   const handleNewMessage = (message: Message) => {
-    if (message.conversationId === selectedConversationId) {
-      setMessages(prev => [...prev, message]);
+    try {
+      console.log('New message received:', message);
+      const normalizedMessage = normalizeMessage(message);
+      
+      if (normalizedMessage.conversationId === selectedConversationId) {
+        setMessages(prev => {
+          const newMessages = [...prev, normalizedMessage];
+          // Ordenar por timestamp (más reciente al final)
+          return newMessages.sort((a, b) => {
+            const timeA = new Date(a.timestamp || a.createdAt || 0).getTime();
+            const timeB = new Date(b.timestamp || b.createdAt || 0).getTime();
+            return timeA - timeB;
+          });
+        });
+      }
+      
+      // Actualizar la lista de conversaciones
+      setConversations(prev => 
+        prev.map(conv => 
+          conv.id === normalizedMessage.conversationId 
+            ? { 
+                ...conv, 
+                lastMessage: normalizedMessage, 
+                unreadCount: (conv.unreadCount || 0) + 1,
+                updatedAt: normalizedMessage.timestamp || normalizedMessage.createdAt || new Date().toISOString()
+              }
+            : conv
+        )
+      );
+    } catch (error) {
+      console.error('Error handling new message:', error);
     }
-    
-    setConversations(prev => 
-      prev.map(conv => 
-        conv.id === message.conversationId 
-          ? { ...conv, lastMessage: message, unreadCount: conv.unreadCount + 1 }
-          : conv
-      )
-    );
   };
 
   const handleUserTyping = (_data: { userId: string }) => {
@@ -112,8 +189,32 @@ const DashboardPage: React.FC = () => {
   };
 
   const handleSendMessage = (content: string) => {
-    if (selectedConversationId && socket) {
-      socket.emit('sendMessage', { conversationId: selectedConversationId, content });
+    try {
+      console.log('Sending message:', { conversationId: selectedConversationId, content });
+      
+      if (!selectedConversationId) {
+        console.error('No conversation selected');
+        return;
+      }
+      
+      if (!socket) {
+        console.error('Socket not connected');
+        return;
+      }
+      
+      if (!socket.connected) {
+        console.error('Socket not connected');
+        return;
+      }
+      
+      socket.emit('sendMessage', { 
+        conversationId: selectedConversationId, 
+        content: content.trim()
+      });
+      
+      console.log('Message sent successfully');
+    } catch (error) {
+      console.error('Error sending message:', error);
     }
   };
 
@@ -148,6 +249,15 @@ const DashboardPage: React.FC = () => {
   });
 
   const selectedConversation = conversations.find(conv => conv.id === selectedConversationId);
+  
+  console.log('Dashboard render state:', {
+    selectedConversationId,
+    selectedConversation,
+    conversations,
+    messages,
+    user,
+    conversationsLength: conversations.length
+  });
 
   if (isLoading) {
     return (
@@ -222,15 +332,17 @@ const DashboardPage: React.FC = () => {
       
       <div className="flex-1 flex flex-col">
         {selectedConversation ? (
-          <ChatWindow
-            conversation={selectedConversation}
-            messages={messages}
-            onSendMessage={handleSendMessage}
-            onStartTyping={handleStartTyping}
-            onStopTyping={handleStopTyping}
-            isTyping={isTyping}
-            currentUser={user!}
-          />
+          <ErrorBoundary>
+            <ChatWindow
+              conversation={selectedConversation}
+              messages={messages}
+              onSendMessage={handleSendMessage}
+              onStartTyping={handleStartTyping}
+              onStopTyping={handleStopTyping}
+              isTyping={isTyping}
+              currentUser={user!}
+            />
+          </ErrorBoundary>
         ) : (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">

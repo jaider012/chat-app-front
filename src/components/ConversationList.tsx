@@ -1,6 +1,7 @@
 import React from 'react';
 import type { ConversationListProps } from '../types';
 import { formatDistanceToNow } from 'date-fns';
+import { getUserDisplayName } from '../utils/dataHelpers';
 
 const ConversationList: React.FC<ConversationListProps> = ({
   conversations,
@@ -23,7 +24,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
             <div className="flex items-center space-x-3">
               <div className="relative">
                 <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-medium">
-                  {otherParticipant?.name?.[0]?.toUpperCase() || 'U'}
+                  {getUserDisplayName(otherParticipant)[0]?.toUpperCase() || 'U'}
                 </div>
                 {otherParticipant?.isOnline && (
                   <div className="absolute bottom-0 right-0 status-online ring-2 ring-white"></div>
@@ -33,7 +34,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
                   <h3 className="font-medium text-gray-900 truncate">
-                    {otherParticipant?.name || 'Unknown User'}
+                    {getUserDisplayName(otherParticipant)}
                   </h3>
                   <div className="flex items-center space-x-2">
                     {conversation.lastMessage && (
@@ -41,7 +42,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
                         {formatDistanceToNow(new Date(conversation.lastMessage.timestamp), { addSuffix: true })}
                       </span>
                     )}
-                    {conversation.unreadCount > 0 && (
+                    {(conversation.unreadCount || 0) > 0 && (
                       <span className="unread-counter animate-pulse-accent">
                         {conversation.unreadCount}
                       </span>
