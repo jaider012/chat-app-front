@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Plus, MessageCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../contexts/SocketContext';
-import type { Conversation, Message } from '../types';
+import type { Conversation, Message, User } from '../types';
 import { apiService } from '../services/api';
 import { mockConversations, getMessagesByConversationId } from '../utils/mockData';
 import { normalizeConversation, normalizeMessage } from '../utils/dataHelpers';
@@ -11,6 +11,14 @@ import ChatWindow from '../components/ChatWindow';
 import ErrorBoundary from '../components/ErrorBoundary';
 import UserSearchModal from '../components/UserSearchModal';
 import ProfileModal from '../components/ProfileModal';
+
+const sortConversations = (convs: Conversation[]): Conversation[] => {
+  return [...convs].sort((a, b) => {
+    const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+    const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+    return dateB - dateA;
+  });
+};
 
 const DashboardPage: React.FC = () => {
   const { user, logout } = useAuth();
@@ -24,57 +32,7 @@ const DashboardPage: React.FC = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    loadConversations();
-  }, []);
-
-  useEffect(() => {
-    if (socket) {
-      console.log('Setting up socket listeners');
-      
-      const wrappedHandleNewMessage = (message: Message) => {
-        try {
-          handleNewMessage(message);
-        } catch (error) {
-          console.error('Error in newMessage handler:', error);
-        }
-      };
-      
-      const wrappedHandleUserTyping = (data: { userId: string }) => {
-        try {
-          handleUserTyping(data);
-        } catch (error) {
-          console.error('Error in userTyping handler:', error);
-        }
-      };
-      
-      const wrappedHandleUserStoppedTyping = (data: { userId: string }) => {
-        try {
-          handleUserStoppedTyping(data);
-        } catch (error) {
-          console.error('Error in userStoppedTyping handler:', error);
-        }
-      };
-
-      socket.on('newMessage', wrappedHandleNewMessage);
-      socket.on('userTyping', wrappedHandleUserTyping);
-      socket.on('userStoppedTyping', wrappedHandleUserStoppedTyping);
-
-      return () => {
-        socket.off('newMessage', wrappedHandleNewMessage);
-        socket.off('userTyping', wrappedHandleUserTyping);
-        socket.off('userStoppedTyping', wrappedHandleUserStoppedTyping);
-      };
-    }
-  }, [socket, selectedConversationId]);
-
-  useEffect(() => {
-    if (selectedConversationId) {
-      loadMessages(selectedConversationId);
-    }
-  }, [selectedConversationId]);
-
-  const loadConversations = async () => {
+  const loadConversations = useCallback(async () => {
     try {
       console.log('Loading conversations...');
       const response = await apiService.getConversations();
@@ -83,34 +41,114 @@ const DashboardPage: React.FC = () => {
       if (response.success && response.data) {
         console.log('Using real API data');
         const normalizedConversations = response.data.map(normalizeConversation);
-        setConversations(normalizedConversations);
+        setConversations(sortConversations(normalizedConversations));
       } else {
         console.warn('API not available, using mock data');
-        setConversations(mockConversations);
+        setConversations(sortConversations(mockConversations));
       }
     } catch (error) {
       console.error('Error loading conversations:', error);
       console.warn('Using mock data instead');
-      setConversations(mockConversations);
+      setConversations(sortConversations(mockConversations));
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const loadMessages = async (conversationId: string) => {
+  useEffect(() => {
+    loadConversations();
+  }, [loadConversations]);
+
+  const handleNewMessage = useCallback((message: Message) => {
+    try {
+      console.log('New message received:', message);
+      const normalizedMessage = normalizeMessage(message);
+      const isOwnMessage = (normalizedMessage.senderId || normalizedMessage.sender?.id) === user?.id;
+
+      if (normalizedMessage.conversationId === selectedConversationId) {
+        setMessages(prev => {
+          const newMessages = [...prev.filter(m => m.id !== normalizedMessage.id), normalizedMessage];
+          return newMessages.sort((a, b) => {
+            const timeA = new Date(a.timestamp || a.createdAt || 0).getTime();
+            const timeB = new Date(b.timestamp || b.createdAt || 0).getTime();
+            return timeA - timeB;
+          });
+        });
+      }
+      
+      setConversations(prev => {
+        const convIndex = prev.findIndex(c => c.id === normalizedMessage.conversationId);
+        if (convIndex === -1) return prev;
+
+        const convToUpdate = prev[convIndex];
+        const isChatting = selectedConversationId === normalizedMessage.conversationId;
+        
+        const updatedConv = { 
+          ...convToUpdate, 
+          lastMessage: normalizedMessage, 
+          unreadCount: !isChatting && !isOwnMessage ? (convToUpdate.unreadCount || 0) + 1 : convToUpdate.unreadCount,
+          updatedAt: normalizedMessage.timestamp || normalizedMessage.createdAt || new Date().toISOString()
+        };
+
+        const otherConvs = prev.filter(c => c.id !== normalizedMessage.conversationId);
+        return sortConversations([updatedConv, ...otherConvs]);
+      });
+    } catch (error) {
+      console.error('Error handling new message:', error);
+    }
+  }, [selectedConversationId, user]);
+
+  const handleUserTyping = useCallback(() => {
+    if (selectedConversationId) {
+      setIsTyping(true);
+    }
+  }, [selectedConversationId]);
+
+  const handleUserStoppedTyping = useCallback(() => {
+    setIsTyping(false);
+  }, []);
+
+  const handleNewConversation = useCallback((conversation: Conversation) => {
+    console.log('New conversation received via socket:', conversation);
+    const newConversation = normalizeConversation(conversation);
+    setConversations(prev => {
+      if (prev.some(c => c.id === newConversation.id)) {
+        return prev;
+      }
+      return sortConversations([newConversation, ...prev]);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (socket) {
+      console.log('Setting up socket listeners');
+      
+      socket.on('newMessage', handleNewMessage);
+      socket.on('userTyping', handleUserTyping);
+      socket.on('userStoppedTyping', handleUserStoppedTyping);
+      socket.on('newConversation', handleNewConversation);
+
+      return () => {
+        socket.off('newMessage', handleNewMessage);
+        socket.off('userTyping', handleUserTyping);
+        socket.off('userStoppedTyping', handleUserStoppedTyping);
+        socket.off('newConversation', handleNewConversation);
+      };
+    }
+  }, [socket, handleNewMessage, handleUserTyping, handleUserStoppedTyping, handleNewConversation]);
+
+  const loadMessages = useCallback(async (conversationId: string) => {
     try {
       console.log('Loading messages for conversation:', conversationId);
       const response = await apiService.getMessages(conversationId);
       console.log('Messages API response:', response);
       
       if (response.success && response.data) {
-        // La API devuelve { items: [...], meta: {...} }
         const messagesData = response.data.items || response.data;
         const normalizedMessages = Array.isArray(messagesData) 
           ? messagesData.map(normalizeMessage)
           : [];
         
-        // Ordenar mensajes por timestamp (más antiguo al inicio, más reciente al final)
         const sortedMessages = normalizedMessages.sort((a, b) => {
           const timeA = new Date(a.timestamp || a.createdAt || 0).getTime();
           const timeB = new Date(b.timestamp || b.createdAt || 0).getTime();
@@ -130,59 +168,27 @@ const DashboardPage: React.FC = () => {
       const conversationMessages = getMessagesByConversationId(conversationId);
       setMessages(conversationMessages);
     }
-  };
+  }, []);
 
-  const handleNewMessage = (message: Message) => {
-    try {
-      console.log('New message received:', message);
-      const normalizedMessage = normalizeMessage(message);
-      
-      if (normalizedMessage.conversationId === selectedConversationId) {
-        setMessages(prev => {
-          const newMessages = [...prev, normalizedMessage];
-          // Ordenar por timestamp (más reciente al final)
-          return newMessages.sort((a, b) => {
-            const timeA = new Date(a.timestamp || a.createdAt || 0).getTime();
-            const timeB = new Date(b.timestamp || b.createdAt || 0).getTime();
-            return timeA - timeB;
-          });
-        });
-      }
-      
-      // Actualizar la lista de conversaciones
-      setConversations(prev => 
-        prev.map(conv => 
-          conv.id === normalizedMessage.conversationId 
-            ? { 
-                ...conv, 
-                lastMessage: normalizedMessage, 
-                unreadCount: (conv.unreadCount || 0) + 1,
-                updatedAt: normalizedMessage.timestamp || normalizedMessage.createdAt || new Date().toISOString()
-              }
-            : conv
-        )
-      );
-    } catch (error) {
-      console.error('Error handling new message:', error);
-    }
-  };
-
-  const handleUserTyping = (_data: { userId: string }) => {
+  useEffect(() => {
     if (selectedConversationId) {
-      setIsTyping(true);
+      loadMessages(selectedConversationId);
+    } else {
+      setMessages([]);
     }
-  };
-
-  const handleUserStoppedTyping = (_data: { userId: string }) => {
-    setIsTyping(false);
-  };
+  }, [selectedConversationId, loadMessages]);
 
   const handleSelectConversation = (conversationId: string) => {
     console.log('Selecting conversation:', conversationId);
     try {
+      if (selectedConversationId === conversationId) return;
+      
       setSelectedConversationId(conversationId);
-      setMessages([]);
       setIsTyping(false);
+      
+      setConversations(prev => 
+        prev.map(c => c.id === conversationId ? { ...c, unreadCount: 0 } : c)
+      );
     } catch (error) {
       console.error('Error selecting conversation:', error);
     }
@@ -192,18 +198,8 @@ const DashboardPage: React.FC = () => {
     try {
       console.log('Sending message:', { conversationId: selectedConversationId, content });
       
-      if (!selectedConversationId) {
-        console.error('No conversation selected');
-        return;
-      }
-      
-      if (!socket) {
-        console.error('Socket not connected');
-        return;
-      }
-      
-      if (!socket.connected) {
-        console.error('Socket not connected');
+      if (!selectedConversationId || !socket || !socket.connected) {
+        console.error('Cannot send message - no conversation selected or socket not connected');
         return;
       }
       
@@ -230,12 +226,28 @@ const DashboardPage: React.FC = () => {
     }
   };
 
-  const handleCreateConversation = async (participantId: string) => {
+  const handleCreateConversation = async (selectedUser: User) => {
     try {
-      const response = await apiService.createConversation(participantId);
+      const existingConv = conversations.find(c => 
+        c.participants.length === 2 &&
+        c.participants.some(p => p.id === selectedUser.id) &&
+        c.participants.some(p => p.id === user?.id)
+      );
+
+      if (existingConv) {
+        setSelectedConversationId(existingConv.id);
+        setIsUserSearchOpen(false);
+        return;
+      }
+
+      const response = await apiService.createConversation(selectedUser.id);
       if (response.success && response.data) {
-        setConversations(prev => [response.data, ...prev]);
-        setSelectedConversationId(response.data.id);
+        const newConversation = normalizeConversation(response.data);
+        setConversations(prev => {
+          const otherConvs = prev.filter(c => c.id !== newConversation.id);
+          return sortConversations([newConversation, ...otherConvs]);
+        });
+        setSelectedConversationId(newConversation.id);
         setIsUserSearchOpen(false);
       }
     } catch (error) {
@@ -245,7 +257,7 @@ const DashboardPage: React.FC = () => {
 
   const filteredConversations = conversations.filter(conv => {
     const otherParticipant = conv.participants.find(p => p.id !== user?.id);
-    return otherParticipant?.name.toLowerCase().includes(searchTerm.toLowerCase());
+    return otherParticipant?.name?.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   const selectedConversation = conversations.find(conv => conv.id === selectedConversationId);
@@ -357,7 +369,7 @@ const DashboardPage: React.FC = () => {
       <UserSearchModal
         isOpen={isUserSearchOpen}
         onClose={() => setIsUserSearchOpen(false)}
-        onSelectUser={(user) => handleCreateConversation(user.id)}
+        onSelectUser={(user) => handleCreateConversation(user)}
       />
       
       <ProfileModal

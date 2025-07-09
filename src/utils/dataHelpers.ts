@@ -15,16 +15,20 @@ export const normalizeUser = (user: any): User => {
 };
 
 export const normalizeMessage = (message: any): Message => {
+  if (!message) {
+    throw new Error('Message is null or undefined');
+  }
+  
   return {
-    id: message.id,
-    content: message.content,
+    id: message.id || `temp-${Date.now()}`,
+    content: message.content || '',
     senderId: message.senderId || message.sender?.id,
     receiverId: message.receiverId,
     conversationId: message.conversationId,
-    timestamp: message.timestamp || message.createdAt,
+    timestamp: message.timestamp || message.createdAt || new Date().toISOString(),
     isRead: message.isRead || false,
     sender: message.sender ? normalizeUser(message.sender) : undefined,
-    createdAt: message.createdAt
+    createdAt: message.createdAt || new Date().toISOString()
   };
 };
 

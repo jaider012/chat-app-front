@@ -59,7 +59,10 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
   const sendMessage = (conversationId: string, content: string) => {
     if (socket && isConnected) {
+      console.log('SocketContext: Emitting sendMessage', { conversationId, content });
       socket.emit('sendMessage', { conversationId, content });
+    } else {
+      console.error('SocketContext: Cannot send message - socket not connected', { socket: !!socket, isConnected });
     }
   };
 
