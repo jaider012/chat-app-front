@@ -19,7 +19,7 @@ export class CryptoManager {
   private config: CryptoManagerConfig;
   private conversationStates: Map<string, ConversationCryptoState> = new Map();
   private encryptionStatus: Map<string, EncryptionStatus> = new Map();
-  private eventHandlers: Map<string, Function[]> = new Map();
+  private eventHandlers: Map<string, ((data?: any) => void)[]> = new Map();
 
   constructor(config: CryptoManagerConfig = {}) {
     this.keyManager = new KeyManager();
@@ -45,8 +45,7 @@ export class CryptoManager {
     } catch (error) {
       this.emit('error', { 
         code: 'INIT_ERROR', 
-        message: 'Failed to initialize crypto manager',
-        error 
+        message: 'Failed to initialize crypto manager'
       });
       throw error;
     }

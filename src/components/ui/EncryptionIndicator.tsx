@@ -172,7 +172,7 @@ export const EncryptionStatusPanel: React.FC<EncryptionStatusPanelProps> = ({
   conversationId,
   className = '',
 }) => {
-  const { status, isSecure, error, initiateKeyExchange, clearKeys } = useEncryption(conversationId);
+  const { status, error, initiateKeyExchange, clearKeys } = useEncryption(conversationId);
   const config = statusConfig[status];
 
   const handleInitiateEncryption = async () => {
