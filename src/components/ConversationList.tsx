@@ -1,7 +1,6 @@
 import React from 'react';
 import type { ConversationListProps } from '../types';
-import { formatDistanceToNow } from 'date-fns';
-import { getUserDisplayName } from '../utils/dataHelpers';
+import { getUserDisplayName, formatMessageTime } from '../utils/dataHelpers';
 
 const ConversationList: React.FC<ConversationListProps> = ({
   conversations,
@@ -10,7 +9,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
   currentUser,
 }) => {
   return (
-    <div className="divide-y divide-gray-100">
+    <div className="divide-y divide-gray-100 h-full overflow-y-auto">
       {conversations.map((conversation) => {
         const otherParticipant = conversation.participants.find(p => p.id !== currentUser.id);
         const isSelected = conversation.id === selectedConversationId;
@@ -22,8 +21,8 @@ const ConversationList: React.FC<ConversationListProps> = ({
             className={`conversation-item ${isSelected ? 'conversation-item-selected' : ''}`}
           >
             <div className="flex items-center space-x-3">
-              <div className="relative">
-                <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-medium">
+              <div className="relative flex-shrink-0">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary text-white flex items-center justify-center font-medium text-sm sm:text-base">
                   {getUserDisplayName(otherParticipant)[0]?.toUpperCase() || 'U'}
                 </div>
                 {otherParticipant?.isOnline && (
@@ -31,15 +30,15 @@ const ConversationList: React.FC<ConversationListProps> = ({
                 )}
               </div>
               
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 overflow-hidden">
                 <div className="flex items-center justify-between mb-1">
-                  <h3 className="font-medium text-gray-900 truncate">
+                  <h3 className="font-medium text-gray-900 truncate text-sm sm:text-base">
                     {getUserDisplayName(otherParticipant)}
                   </h3>
-                  <div className="flex items-center space-x-2">
-                    {conversation.lastMessage && (
+                  <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+                    {conversation.lastMessage && conversation.lastMessage.timestamp && (
                       <span className="text-xs text-gray-500">
-                        {formatDistanceToNow(new Date(conversation.lastMessage.timestamp), { addSuffix: true })}
+                        {formatMessageTime(conversation.lastMessage.timestamp)}
                       </span>
                     )}
                     {(conversation.unreadCount || 0) > 0 && (
@@ -51,7 +50,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
                 </div>
                 
                 {conversation.lastMessage && (
-                  <p className="text-sm text-gray-500 truncate">
+                  <p className="text-xs sm:text-sm text-gray-500 truncate break-words overflow-hidden">
                     {conversation.lastMessage.senderId === currentUser.id ? 'You: ' : ''}
                     {conversation.lastMessage.content}
                   </p>

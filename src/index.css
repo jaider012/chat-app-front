@@ -87,4 +87,39 @@
   .typing-dot:nth-child(3) {
     animation-delay: 0.4s;
   }
+
+  /* Mobile responsive utilities */
+  .touch-target {
+    @apply min-w-[44px] min-h-[44px];
+  }
+  
+  .mobile-full-screen {
+    @apply fixed inset-0 bg-white z-50 overflow-y-auto;
+  }
+  
+  .mobile-safe-area {
+    @apply pb-safe-bottom;
+  }
+
+  /* Enhanced button sizes for mobile */
+  @media (max-width: 639px) {
+    .btn-primary, .btn-secondary, .btn-accent {
+      @apply py-3 px-6 text-base;
+    }
+  }
+
+  /* Improved touch targets for mobile */
+  .chat-bubble-sent, .chat-bubble-received {
+    @apply max-w-[85%] sm:max-w-xs md:max-w-md lg:max-w-lg;
+  }
+
+  /* Mobile conversation item styling */
+  .conversation-item {
+    @apply p-4 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100 touch-manipulation;
+  }
+
+  /* Mobile modal overlay improvements */
+  .modal-overlay {
+    @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-0 sm:p-4;
+  }
 }

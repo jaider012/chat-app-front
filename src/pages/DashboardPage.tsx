@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, MessageCircle } from 'lucide-react';
+import { Search, Plus, MessageCircle, ArrowLeft, Menu, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../contexts/SocketContext';
 import type { Conversation, Message } from '../types';
@@ -23,10 +23,29 @@ const DashboardPage: React.FC = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     loadConversations();
   }, []);
+
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    
+    checkIfMobile();
+    window.addEventListener('resize', checkIfMobile);
+    
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
+
+  useEffect(() => {
+    if (selectedConversationId && isMobile) {
+      setIsMobileMenuOpen(false);
+    }
+  }, [selectedConversationId, isMobile]);
 
   useEffect(() => {
     if (socket) {
@@ -234,8 +253,9 @@ const DashboardPage: React.FC = () => {
     try {
       const response = await apiService.createConversation(participantId);
       if (response.success && response.data) {
-        setConversations(prev => [response.data, ...prev]);
-        setSelectedConversationId(response.data.id);
+        const normalizedConversation = normalizeConversation(response.data);
+        setConversations(prev => [normalizedConversation, ...prev]);
+        setSelectedConversationId(normalizedConversation.id);
         setIsUserSearchOpen(false);
       }
     } catch (error) {
@@ -271,12 +291,35 @@ const DashboardPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background-light flex">
-      <div className="w-1/3 bg-white border-r border-gray-200 flex flex-col">
+    <div className="h-screen bg-background-light flex relative">
+      {/* Mobile Menu Overlay */}
+      {isMobile && isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+      
+      {/* Sidebar */}
+      <div className={`
+        ${isMobile ? 'fixed inset-y-0 left-0 z-50 w-80 transform transition-transform duration-300 ease-in-out' : 'w-1/3 lg:w-1/4 xl:w-1/3'}
+        ${isMobile && !isMobileMenuOpen ? '-translate-x-full' : 'translate-x-0'}
+        bg-white border-r border-gray-200 flex flex-col
+      `}>
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-xl font-header text-primary">Messages</h1>
             <div className="flex items-center space-x-2">
+              {/* Mobile Close Button */}
+              {isMobile && (
+                <button
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  title="Close menu"
+                >
+                  <X className="w-5 h-5 text-gray-600" />
+                </button>
+              )}
               <button
                 onClick={() => setIsUserSearchOpen(true)}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -330,9 +373,39 @@ const DashboardPage: React.FC = () => {
         </div>
       </div>
       
-      <div className="flex-1 flex flex-col">
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col min-h-0">
         {selectedConversation ? (
           <ErrorBoundary>
+            {/* Mobile Header */}
+            {isMobile && (
+              <div className="flex items-center p-4 bg-white border-b border-gray-200">
+                <button
+                  onClick={() => setIsMobileMenuOpen(true)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors mr-3"
+                >
+                  <ArrowLeft className="w-5 h-5 text-gray-600" />
+                </button>
+                <div className="flex items-center space-x-3">
+                  <div className="relative">
+                    <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-medium text-sm">
+                      {selectedConversation.participants.find(p => p.id !== user?.id)?.name?.[0]?.toUpperCase() || 'U'}
+                    </div>
+                    {selectedConversation.participants.find(p => p.id !== user?.id)?.isOnline && (
+                      <div className="absolute bottom-0 right-0 w-2 h-2 bg-green-400 rounded-full ring-1 ring-white"></div>
+                    )}
+                  </div>
+                  <div>
+                    <h2 className="font-medium text-gray-900 text-sm">
+                      {selectedConversation.participants.find(p => p.id !== user?.id)?.name || 'Unknown User'}
+                    </h2>
+                    <p className="text-xs text-gray-500">
+                      {selectedConversation.participants.find(p => p.id !== user?.id)?.isOnline ? 'Online' : 'Offline'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
             <ChatWindow
               conversation={selectedConversation}
               messages={messages}
@@ -344,11 +417,35 @@ const DashboardPage: React.FC = () => {
             />
           </ErrorBoundary>
         ) : (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <MessageCircle className="w-24 h-24 text-gray-300 mb-4 mx-auto" />
-              <h3 className="text-xl font-medium text-gray-500 mb-2">Select a conversation</h3>
-              <p className="text-gray-500">Choose a conversation from the sidebar to start messaging</p>
+          <div className="flex-1 flex flex-col">
+            {/* Mobile Header for Empty State */}
+            {isMobile && (
+              <div className="flex items-center p-4 bg-white border-b border-gray-200">
+                <button
+                  onClick={() => setIsMobileMenuOpen(true)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors mr-3"
+                >
+                  <Menu className="w-5 h-5 text-gray-600" />
+                </button>
+                <h1 className="text-lg font-medium text-gray-900">Messages</h1>
+              </div>
+            )}
+            <div className="flex-1 flex items-center justify-center p-8">
+              <div className="text-center">
+                <MessageCircle className="w-16 sm:w-24 h-16 sm:h-24 text-gray-300 mb-4 mx-auto" />
+                <h3 className="text-lg sm:text-xl font-medium text-gray-500 mb-2">Select a conversation</h3>
+                <p className="text-sm sm:text-base text-gray-500 mb-4">
+                  {isMobile ? 'Tap the menu to see your conversations' : 'Choose a conversation from the sidebar to start messaging'}
+                </p>
+                {isMobile && (
+                  <button
+                    onClick={() => setIsMobileMenuOpen(true)}
+                    className="btn-secondary text-sm"
+                  >
+                    View Conversations
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}
