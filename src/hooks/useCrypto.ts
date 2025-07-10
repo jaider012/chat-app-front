@@ -189,8 +189,6 @@ export const useKeyExchange = () => {
           isInitiator: true,
         });
         return keyExchangeData;
-      } catch (err) {
-        throw err;
       } finally {
         setIsExchanging(false);
       }
@@ -212,8 +210,6 @@ export const useKeyExchange = () => {
         });
 
         return myPublicKey;
-      } catch (err) {
-        throw err;
       } finally {
         setIsExchanging(false);
       }
@@ -235,8 +231,6 @@ export const useKeyExchange = () => {
           publicKey: null,
           isInitiator: false,
         });
-      } catch (err) {
-        throw err;
       } finally {
         setIsExchanging(false);
       }
@@ -308,7 +302,7 @@ export const useCryptoHealth = () => {
     try {
       const status = await performHealthCheck();
       setHealthStatus(status);
-    } catch (error) {
+    } catch {
       setHealthStatus({
         isHealthy: false,
         issues: ['Health check failed'],

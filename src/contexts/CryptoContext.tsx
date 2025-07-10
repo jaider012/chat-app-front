@@ -302,7 +302,7 @@ export const useCryptoHealth = () => {
       try {
         const status = await performHealthCheck();
         setHealthStatus(status);
-      } catch (error) {
+      } catch {
         setHealthStatus({
           isHealthy: false,
           issues: ['Health check failed'],
