@@ -1,7 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Send } from "lucide-react";
+import { Send, Shield } from "lucide-react";
 import type { ChatWindowProps } from "../types";
 import { getUserDisplayName, formatMessageTime } from "../utils/dataHelpers";
+import { EncryptionIndicator, EncryptionStatusPanel } from "./ui/EncryptionIndicator";
+import { useEncryption, useKeyExchange } from "../hooks/useCrypto";
+import { useSocket } from "../contexts/SocketContext";
+import { EncryptionStatus } from "../crypto/types";
 
 const ChatWindow: React.FC<ChatWindowProps> = ({
   conversation,
@@ -19,8 +23,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   });
   const [messageInput, setMessageInput] = useState("");
   const [, setIsInputFocused] = useState(false);
+  const [showEncryptionPanel, setShowEncryptionPanel] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  const { initiateKeyExchange } = useSocket();
+  const { status: encryptionStatus, isSecure } = useEncryption(conversation?.id || '');
 
   const otherParticipant = conversation?.participants?.find(
     (p) => p.id !== currentUser?.id
@@ -81,6 +89,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   };
 
+  const handleSetupEncryption = async () => {
+    if (!conversation?.id) return;
+    
+    try {
+      await initiateKeyExchange(conversation.id);
+    } catch (error) {
+      console.error('Failed to setup encryption:', error);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -124,7 +142,33 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             </p>
           </div>
         </div>
+        
+        <div className="flex items-center space-x-3">
+          <EncryptionIndicator 
+            conversationId={conversation.id} 
+            showText={true}
+            size="sm"
+          />
+          <button
+            onClick={() => setShowEncryptionPanel(!showEncryptionPanel)}
+            className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+            title="Encryption settings"
+          >
+            <Shield className="w-5 h-5" />
+          </button>
+        </div>
       </div>
+
+      {showEncryptionPanel && (
+        <div className="border-b border-gray-200 bg-gray-50">
+          <div className="p-4">
+            <EncryptionStatusPanel 
+              conversationId={conversation.id}
+              className="bg-white"
+            />
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
         {messages && messages.length > 0 ? (
@@ -145,9 +189,18 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   <div
                     className={`${
                       isOwnMessage ? "chat-bubble-sent" : "chat-bubble-received"
-                    } rounded-2xl px-4 py-2 break-words`}
+                    } rounded-2xl px-4 py-2 break-words relative`}
                   >
                     <p className="text-sm">{message.content}</p>
+                    {isSecure && (
+                      <div className="absolute top-1 right-1">
+                        <EncryptionIndicator 
+                          conversationId={conversation.id}
+                          size="sm"
+                          className="w-4 h-4 opacity-60"
+                        />
+                      </div>
+                    )}
                   </div>
                   <div
                     className={`text-xs text-gray-500 mt-1 ${
@@ -191,8 +244,28 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         onSubmit={handleSendMessage}
         className="p-4 border-t border-gray-200 bg-white flex-shrink-0"
       >
-        <div className="flex items-center space-x-2 ">
-          <div className="flex-1">
+        {encryptionStatus === EncryptionStatus.NOT_INITIALIZED && (
+          <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Shield className="w-4 h-4 text-yellow-600" />
+                <span className="text-sm text-yellow-800">
+                  Enable end-to-end encryption for secure messaging
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleSetupEncryption}
+                className="px-3 py-1 text-xs bg-yellow-600 text-white rounded hover:bg-yellow-700 transition-colors"
+              >
+                Enable
+              </button>
+            </div>
+          </div>
+        )}
+        
+        <div className="flex items-center space-x-2">
+          <div className="flex-1 relative">
             <textarea
               value={messageInput}
               onChange={handleInputChange}
@@ -202,14 +275,22 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 setIsInputFocused(false);
                 handleStopTyping();
               }}
-              placeholder="Type a message...ddd"
-              className="w-full resize-none rounded-lg border border-gray-300 px-3 sm:px-4 py-2 sm:py-3 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent max-h-32 text-sm sm:text-base"
+              placeholder={isSecure ? "Type an encrypted message..." : "Type a message..."}
+              className="w-full resize-none rounded-lg border border-gray-300 px-3 sm:px-4 py-2 sm:py-3 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent max-h-32 text-sm sm:text-base pr-10"
               rows={1}
               style={{ minHeight: "44px" }}
             />
+            {isSecure && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <EncryptionIndicator 
+                  conversationId={conversation.id}
+                  size="sm"
+                  className="opacity-60"
+                />
+              </div>
+            )}
           </div>
           <div className="flex justify-center h-full">
-            {" "}
             <button
               type="submit"
               disabled={!messageInput.trim()}

@@ -42,9 +42,10 @@ export interface AuthState {
 export interface SocketContextType {
   socket: any;
   isConnected: boolean;
-  sendMessage: (conversationId: string, content: string) => void;
+  sendMessage: (conversationId: string, content: string, useEncryption?: boolean) => Promise<void>;
   startTyping: (conversationId: string) => void;
   stopTyping: (conversationId: string) => void;
+  initiateKeyExchange: (conversationId: string) => Promise<void>;
 }
 
 export interface ApiResponse<T> {
