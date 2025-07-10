@@ -1,6 +1,6 @@
-import type { User, Conversation, Message, ApiResponse } from '../types';
+import type { User, Conversation, Message, ApiResponse } from "../types";
 
-const API_BASE_URL = 'http://localhost:3006/api';
+const API_BASE_URL = "http://localhost:3006/api";
 
 class ApiService {
   private token: string | null = null;
@@ -15,7 +15,7 @@ class ApiService {
   ): Promise<ApiResponse<T>> {
     const url = `${API_BASE_URL}${endpoint}`;
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...(options.headers as Record<string, string>),
     };
 
@@ -36,11 +36,11 @@ class ApiService {
       const data = await response.json();
       return { data, success: true };
     } catch (error) {
-      console.error('API request failed:', error);
+      console.error("API request failed:", error);
       return {
         data: null as T,
         success: false,
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
@@ -50,31 +50,39 @@ class ApiService {
   }
 
   async getProfile(): Promise<ApiResponse<User>> {
-    return this.request<User>('/users/me');
+    return this.request<User>("/users/me");
   }
 
   async getConversations(): Promise<ApiResponse<Conversation[]>> {
-    return this.request<Conversation[]>('/conversations');
+    return this.request<Conversation[]>("/conversations");
   }
 
-  async getMessages(conversationId: string, page = 1, limit = 50): Promise<ApiResponse<Message[]>> {
-    return this.request<Message[]>(`/conversations/${conversationId}/messages?page=${page}&limit=${limit}`);
+  async getMessages(
+    conversationId: string,
+    page = 1,
+    limit = 50
+  ): Promise<ApiResponse<Message[]>> {
+    return this.request<Message[]>(
+      `/conversations/${conversationId}/messages?page=${page}&limit=${limit}`
+    );
   }
 
   async getUsers(): Promise<ApiResponse<User[]>> {
-    return this.request<User[]>('/users');
+    return this.request<User[]>("/users");
   }
 
-  async createConversation(participantId: string): Promise<ApiResponse<Conversation>> {
-    return this.request<Conversation>('/conversations', {
-      method: 'POST',
+  async createConversation(
+    participantId: string
+  ): Promise<ApiResponse<Conversation>> {
+    return this.request<Conversation>("/conversations", {
+      method: "POST",
       body: JSON.stringify({ participantId }),
     });
   }
 
   async logout(): Promise<ApiResponse<void>> {
-    return this.request<void>('/auth/logout', {
-      method: 'POST',
+    return this.request<void>("/auth/logout", {
+      method: "POST",
     });
   }
 }
