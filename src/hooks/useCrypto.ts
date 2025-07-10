@@ -1,7 +1,10 @@
-import { useCallback, useState, useEffect } from 'react';
-import { useCryptoContext } from '../contexts/CryptoContext';
-import { EncryptionStatus, EncryptedMessage, CryptoError } from '../crypto/types';
-
+import { useCallback, useState, useEffect } from "react";
+import { useCryptoContext } from "../contexts/CryptoContext";
+import {
+  type EncryptedMessage,
+  type CryptoError,
+  EncryptionStatus,
+} from "../crypto/types";
 export const useCrypto = () => {
   const context = useCryptoContext();
   return context;
@@ -20,7 +23,9 @@ export const useEncryption = (conversationId: string) => {
     isInitialized,
   } = useCryptoContext();
 
-  const [status, setStatus] = useState<EncryptionStatus>(EncryptionStatus.NOT_INITIALIZED);
+  const [status, setStatus] = useState<EncryptionStatus>(
+    EncryptionStatus.NOT_INITIALIZED
+  );
   const [isSecure, setIsSecure] = useState(false);
 
   useEffect(() => {
@@ -29,12 +34,17 @@ export const useEncryption = (conversationId: string) => {
       setStatus(currentStatus);
       setIsSecure(isConversationSecure(conversationId));
     }
-  }, [conversationId, isInitialized, getEncryptionStatus, isConversationSecure]);
+  }, [
+    conversationId,
+    isInitialized,
+    getEncryptionStatus,
+    isConversationSecure,
+  ]);
 
   const encrypt = useCallback(
-    async (message: string, sender: string = 'current-user') => {
+    async (message: string, sender: string = "current-user") => {
       if (!conversationId) {
-        throw new Error('No conversation ID provided');
+        throw new Error("No conversation ID provided");
       }
       return await encryptMessage(message, conversationId, sender);
     },
@@ -50,7 +60,7 @@ export const useEncryption = (conversationId: string) => {
 
   const initiateKeyExchange = useCallback(async () => {
     if (!conversationId) {
-      throw new Error('No conversation ID provided');
+      throw new Error("No conversation ID provided");
     }
     return await startKeyExchange(conversationId);
   }, [startKeyExchange, conversationId]);
@@ -58,7 +68,7 @@ export const useEncryption = (conversationId: string) => {
   const finishKeyExchange = useCallback(
     async (publicKey: string) => {
       if (!conversationId) {
-        throw new Error('No conversation ID provided');
+        throw new Error("No conversation ID provided");
       }
       await completeKeyExchange(conversationId, publicKey);
     },
@@ -85,14 +95,15 @@ export const useEncryption = (conversationId: string) => {
 };
 
 export const useSecureMessaging = (conversationId: string) => {
-  const { encrypt, decrypt, status, isSecure, error } = useEncryption(conversationId);
+  const { encrypt, decrypt, status, isSecure, error } =
+    useEncryption(conversationId);
   const [messageQueue, setMessageQueue] = useState<EncryptedMessage[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
   const sendSecureMessage = useCallback(
-    async (message: string, sender: string = 'current-user') => {
+    async (message: string, sender: string = "current-user") => {
       if (!isSecure) {
-        throw new Error('Conversation is not secure');
+        throw new Error("Conversation is not secure");
       }
 
       setIsProcessing(true);
@@ -120,22 +131,26 @@ export const useSecureMessaging = (conversationId: string) => {
   );
 
   const queueMessage = useCallback((encryptedMessage: EncryptedMessage) => {
-    setMessageQueue(prev => [...prev, encryptedMessage]);
+    setMessageQueue((prev) => [...prev, encryptedMessage]);
   }, []);
 
   const processQueue = useCallback(async () => {
     if (messageQueue.length === 0 || isProcessing) return;
 
     setIsProcessing(true);
-    const decryptedMessages: { message: string; original: EncryptedMessage }[] = [];
+    const decryptedMessages: { message: string; original: EncryptedMessage }[] =
+      [];
 
     try {
       for (const encryptedMessage of messageQueue) {
         try {
           const decryptedMessage = await decrypt(encryptedMessage);
-          decryptedMessages.push({ message: decryptedMessage, original: encryptedMessage });
+          decryptedMessages.push({
+            message: decryptedMessage,
+            original: encryptedMessage,
+          });
         } catch (error) {
-          console.error('Failed to decrypt queued message:', error);
+          console.error("Failed to decrypt queued message:", error);
         }
       }
 
@@ -166,7 +181,8 @@ export const useSecureMessaging = (conversationId: string) => {
 };
 
 export const useKeyExchange = () => {
-  const { startKeyExchange, completeKeyExchange, getUserPublicKey, error } = useCryptoContext();
+  const { startKeyExchange, completeKeyExchange, getUserPublicKey, error } =
+    useCryptoContext();
   const [isExchanging, setIsExchanging] = useState(false);
   const [exchangeState, setExchangeState] = useState<{
     conversationId: string | null;
@@ -202,7 +218,7 @@ export const useKeyExchange = () => {
       try {
         const myPublicKey = await getUserPublicKey();
         await completeKeyExchange(conversationId, remotePublicKey);
-        
+
         setExchangeState({
           conversationId,
           publicKey: myPublicKey,
@@ -220,12 +236,15 @@ export const useKeyExchange = () => {
   const complete = useCallback(
     async (remotePublicKey: string) => {
       if (!exchangeState.conversationId) {
-        throw new Error('No key exchange in progress');
+        throw new Error("No key exchange in progress");
       }
 
       setIsExchanging(true);
       try {
-        await completeKeyExchange(exchangeState.conversationId, remotePublicKey);
+        await completeKeyExchange(
+          exchangeState.conversationId,
+          remotePublicKey
+        );
         setExchangeState({
           conversationId: null,
           publicKey: null,
@@ -263,7 +282,7 @@ export const useCryptoErrors = () => {
 
   useEffect(() => {
     if (error) {
-      setErrorHistory(prev => [...prev, error]);
+      setErrorHistory((prev) => [...prev, error]);
     }
   }, [error]);
 
@@ -273,7 +292,9 @@ export const useCryptoErrors = () => {
 
   const getErrorsForConversation = useCallback(
     (conversationId: string) => {
-      return errorHistory.filter(err => err.conversationId === conversationId);
+      return errorHistory.filter(
+        (err) => err.conversationId === conversationId
+      );
     },
     [errorHistory]
   );
@@ -305,7 +326,7 @@ export const useCryptoHealth = () => {
     } catch {
       setHealthStatus({
         isHealthy: false,
-        issues: ['Health check failed'],
+        issues: ["Health check failed"],
         conversationCount: 0,
       });
     } finally {

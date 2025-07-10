@@ -1,5 +1,5 @@
 import { WebCryptoUtils } from './WebCryptoUtils';
-import { EncryptedData, EncryptedMessage } from './types';
+import type { EncryptedData, EncryptedMessage } from './types';
 
 export class MessageEncryption {
   private static readonly MAX_SEQUENCE_NUMBER = 2147483647; // 2^31 - 1

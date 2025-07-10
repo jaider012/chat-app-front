@@ -33,13 +33,20 @@ export interface KeyExchangeData {
   timestamp: number;
 }
 
-export enum EncryptionStatus {
-  NOT_INITIALIZED = 'not_initialized',
-  INITIALIZING = 'initializing',
-  ACTIVE = 'active',
-  ERROR = 'error',
-  KEY_EXCHANGE_PENDING = 'key_exchange_pending'
-}
+export type EncryptionStatus =
+  | "not_initialized"
+  | "initializing"
+  | "active"
+  | "error"
+  | "key_exchange_pending";
+
+export const EncryptionStatus = {
+  NOT_INITIALIZED: "not_initialized" as const,
+  INITIALIZING: "initializing" as const,
+  ACTIVE: "active" as const,
+  ERROR: "error" as const,
+  KEY_EXCHANGE_PENDING: "key_exchange_pending" as const,
+} as const;
 
 export interface CryptoError {
   code: string;
@@ -61,11 +68,15 @@ export interface CryptoContextValue {
   encryptionStatus: Map<string, EncryptionStatus>;
   isLoading: boolean;
   error: CryptoError | null;
-  
+
   initializeCrypto(): Promise<void>;
   startKeyExchange(conversationId: string): Promise<KeyExchangeData>;
   completeKeyExchange(conversationId: string, publicKey: string): Promise<void>;
-  encryptMessage(message: string, conversationId: string, sender?: string): Promise<EncryptedMessage>;
+  encryptMessage(
+    message: string,
+    conversationId: string,
+    sender?: string
+  ): Promise<EncryptedMessage>;
   decryptMessage(encryptedMessage: EncryptedMessage): Promise<string>;
   getEncryptionStatus(conversationId: string): EncryptionStatus;
   clearConversationKeys(conversationId: string): void;

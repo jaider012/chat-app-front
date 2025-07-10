@@ -1,6 +1,6 @@
 import { WebCryptoUtils } from './WebCryptoUtils';
 import { MessageEncryption } from './MessageEncryption';
-import { EncryptedMessage } from './types';
+import type { EncryptedMessage } from './types';
 
 interface RatchetState {
   rootKey: CryptoKey;

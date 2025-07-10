@@ -3,7 +3,7 @@ import { io, Socket } from 'socket.io-client';
 import type { SocketContextType } from '../types';
 import { useAuth } from './AuthContext';
 import { useCryptoContext } from './CryptoContext';
-import { EncryptedMessage, EncryptionStatus } from '../crypto/types';
+import { type EncryptedMessage, EncryptionStatus } from '../crypto/types';
 
 const SocketContext = createContext<SocketContextType | null>(null);
 

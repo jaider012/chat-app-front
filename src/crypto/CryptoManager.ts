@@ -1,16 +1,16 @@
-import { KeyManager } from './KeyManager';
-import { MessageEncryption } from './MessageEncryption';
-import { DoubleRatchet } from './DoubleRatchet';
-import { WebCryptoUtils } from './WebCryptoUtils';
+import { KeyManager } from "./KeyManager";
+import { MessageEncryption } from "./MessageEncryption";
+import { DoubleRatchet } from "./DoubleRatchet";
+import { WebCryptoUtils } from "./WebCryptoUtils";
 import {
-  UserKeyPair,
-  EncryptedMessage,
-  ConversationCryptoState,
+  type CryptoManagerConfig,
+  type UserKeyPair,
+  type EncryptedMessage,
+  type KeyExchangeData,
+  type ConversationCryptoState,
+  type CryptoError,
   EncryptionStatus,
-  CryptoError,
-  CryptoManagerConfig,
-  KeyExchangeData,
-} from './types';
+} from "./types";
 
 export class CryptoManager {
   private keyManager: KeyManager;
@@ -26,7 +26,7 @@ export class CryptoManager {
     this.messageEncryption = new MessageEncryption();
     this.doubleRatchet = new DoubleRatchet();
     this.config = {
-      storageKey: 'chat-app-crypto',
+      storageKey: "chat-app-crypto",
       keyRotationInterval: 24 * 60 * 60 * 1000, // 24 hours
       maxSequenceNumber: 2147483647,
       ...config,
@@ -35,17 +35,17 @@ export class CryptoManager {
 
   async initialize(): Promise<void> {
     if (!WebCryptoUtils.isWebCryptoSupported()) {
-      throw new Error('Web Crypto API is not supported in this browser');
+      throw new Error("Web Crypto API is not supported in this browser");
     }
 
     try {
       await this.keyManager.initializeStorage();
       await this.keyManager.generateUserKeys();
-      this.emit('initialized');
+      this.emit("initialized");
     } catch (error) {
-      this.emit('error', { 
-        code: 'INIT_ERROR', 
-        message: 'Failed to initialize crypto manager'
+      this.emit("error", {
+        code: "INIT_ERROR",
+        message: "Failed to initialize crypto manager",
       });
       throw error;
     }
@@ -54,14 +54,14 @@ export class CryptoManager {
   async generateUserKeys(): Promise<UserKeyPair> {
     try {
       const userKeys = await this.keyManager.generateUserKeys();
-      this.emit('keysGenerated', userKeys);
+      this.emit("keysGenerated", userKeys);
       return userKeys;
     } catch (err) {
       const cryptoError: CryptoError = {
-        code: 'KEY_GENERATION_ERROR',
-        message: 'Failed to generate user keys',
+        code: "KEY_GENERATION_ERROR",
+        message: "Failed to generate user keys",
       };
-      this.emit('error', cryptoError);
+      this.emit("error", cryptoError);
       throw err;
     }
   }
@@ -71,23 +71,25 @@ export class CryptoManager {
       const userKeys = await this.keyManager.getUserKeys();
       return await this.keyManager.exportPublicKey(userKeys.publicKey);
     } catch (error) {
-      throw new Error('Failed to get user public key');
+      console.log("Error getting user public key:", error);
+      
+      throw new Error("Failed to get user public key for encryption");
     }
   }
 
   async startKeyExchange(conversationId: string): Promise<KeyExchangeData> {
     try {
       this.setEncryptionStatus(conversationId, EncryptionStatus.INITIALIZING);
-      
+
       const publicKey = await this.getUserPublicKey();
       const keyExchangeData: KeyExchangeData = {
         conversationId,
         publicKey,
-        sender: 'current-user', // Should be replaced with actual user ID
+        sender: "current-user", // Should be replaced with actual user ID
         timestamp: Date.now(),
       };
 
-      this.emit('keyExchangeStarted', keyExchangeData);
+      this.emit("keyExchangeStarted", keyExchangeData);
       return keyExchangeData;
     } catch (error) {
       this.setEncryptionStatus(conversationId, EncryptionStatus.ERROR);
@@ -102,12 +104,12 @@ export class CryptoManager {
   ): Promise<void> {
     try {
       this.setEncryptionStatus(conversationId, EncryptionStatus.INITIALIZING);
-      
+
       const publicKey = await this.keyManager.importPublicKey(remotePublicKey);
       const sharedSecret = await this.keyManager.deriveSharedSecret(publicKey);
-      
+
       await this.keyManager.storeConversationKey(conversationId, sharedSecret);
-      
+
       const conversationState: ConversationCryptoState = {
         sharedSecret,
         publicKey: remotePublicKey,
@@ -115,21 +117,25 @@ export class CryptoManager {
         isInitialized: true,
         lastRotation: Date.now(),
       };
-      
+
       this.conversationStates.set(conversationId, conversationState);
-      
-      await this.doubleRatchet.initializeRatchet(conversationId, sharedSecret, isInitiator);
-      
+
+      await this.doubleRatchet.initializeRatchet(
+        conversationId,
+        sharedSecret,
+        isInitiator
+      );
+
       this.setEncryptionStatus(conversationId, EncryptionStatus.ACTIVE);
-      this.emit('keyExchangeCompleted', { conversationId, isInitiator });
+      this.emit("keyExchangeCompleted", { conversationId, isInitiator });
     } catch (error) {
       this.setEncryptionStatus(conversationId, EncryptionStatus.ERROR);
       const cryptoError: CryptoError = {
-        code: 'KEY_EXCHANGE_ERROR',
-        message: 'Failed to complete key exchange',
+        code: "KEY_EXCHANGE_ERROR",
+        message: "Failed to complete key exchange",
         conversationId,
       };
-      this.emit('error', cryptoError);
+      this.emit("error", cryptoError);
       throw error;
     }
   }
@@ -141,7 +147,7 @@ export class CryptoManager {
   ): Promise<EncryptedMessage> {
     const state = this.conversationStates.get(conversationId);
     if (!state || !state.isInitialized) {
-      throw new Error('Conversation not initialized for encryption');
+      throw new Error("Conversation not initialized for encryption");
     }
 
     try {
@@ -155,15 +161,18 @@ export class CryptoManager {
         sender
       );
 
-      this.emit('messageEncrypted', { conversationId, messageId: encryptedMessage.timestamp });
+      this.emit("messageEncrypted", {
+        conversationId,
+        messageId: encryptedMessage.timestamp,
+      });
       return encryptedMessage;
     } catch (error) {
       const cryptoError: CryptoError = {
-        code: 'ENCRYPTION_ERROR',
-        message: 'Failed to encrypt message',
+        code: "ENCRYPTION_ERROR",
+        message: "Failed to encrypt message",
         conversationId,
       };
-      this.emit('error', cryptoError);
+      this.emit("error", cryptoError);
       throw error;
     }
   }
@@ -171,9 +180,9 @@ export class CryptoManager {
   async decryptMessage(encryptedMessage: EncryptedMessage): Promise<string> {
     const { conversationId } = encryptedMessage;
     const state = this.conversationStates.get(conversationId);
-    
+
     if (!state || !state.isInitialized) {
-      throw new Error('Conversation not initialized for decryption');
+      throw new Error("Conversation not initialized for decryption");
     }
 
     try {
@@ -182,15 +191,18 @@ export class CryptoManager {
         conversationId
       );
 
-      this.emit('messageDecrypted', { conversationId, messageId: encryptedMessage.timestamp });
+      this.emit("messageDecrypted", {
+        conversationId,
+        messageId: encryptedMessage.timestamp,
+      });
       return decryptedMessage;
     } catch (error) {
       const cryptoError: CryptoError = {
-        code: 'DECRYPTION_ERROR',
-        message: 'Failed to decrypt message',
+        code: "DECRYPTION_ERROR",
+        message: "Failed to decrypt message",
         conversationId,
       };
-      this.emit('error', cryptoError);
+      this.emit("error", cryptoError);
       throw error;
     }
   }
@@ -198,22 +210,22 @@ export class CryptoManager {
   async rotateConversationKey(conversationId: string): Promise<void> {
     const state = this.conversationStates.get(conversationId);
     if (!state || !state.isInitialized) {
-      throw new Error('Cannot rotate key - conversation not initialized');
+      throw new Error("Cannot rotate key - conversation not initialized");
     }
 
     try {
       await this.doubleRatchet.performKeyRotation(conversationId);
       state.lastRotation = Date.now();
       this.messageEncryption.recordKeyRotation(conversationId);
-      
-      this.emit('keyRotated', { conversationId });
+
+      this.emit("keyRotated", { conversationId });
     } catch (error) {
       const cryptoError: CryptoError = {
-        code: 'KEY_ROTATION_ERROR',
-        message: 'Failed to rotate conversation key',
+        code: "KEY_ROTATION_ERROR",
+        message: "Failed to rotate conversation key",
         conversationId,
       };
-      this.emit('error', cryptoError);
+      this.emit("error", cryptoError);
       throw error;
     }
   }
@@ -227,12 +239,18 @@ export class CryptoManager {
   }
 
   getEncryptionStatus(conversationId: string): EncryptionStatus {
-    return this.encryptionStatus.get(conversationId) || EncryptionStatus.NOT_INITIALIZED;
+    return (
+      this.encryptionStatus.get(conversationId) ||
+      EncryptionStatus.NOT_INITIALIZED
+    );
   }
 
-  private setEncryptionStatus(conversationId: string, status: EncryptionStatus): void {
+  private setEncryptionStatus(
+    conversationId: string,
+    status: EncryptionStatus
+  ): void {
     this.encryptionStatus.set(conversationId, status);
-    this.emit('statusChanged', { conversationId, status });
+    this.emit("statusChanged", { conversationId, status });
   }
 
   getConversationState(conversationId: string): ConversationCryptoState | null {
@@ -251,15 +269,15 @@ export class CryptoManager {
       this.encryptionStatus.delete(conversationId);
       this.doubleRatchet.clearConversation(conversationId);
       this.messageEncryption.clearConversationData(conversationId);
-      
-      this.emit('conversationCleared', { conversationId });
+
+      this.emit("conversationCleared", { conversationId });
     } catch (error) {
       const cryptoError: CryptoError = {
-        code: 'CLEANUP_ERROR',
-        message: 'Failed to clear conversation keys',
+        code: "CLEANUP_ERROR",
+        message: "Failed to clear conversation keys",
         conversationId,
       };
-      this.emit('error', cryptoError);
+      this.emit("error", cryptoError);
       throw error;
     }
   }
@@ -269,23 +287,27 @@ export class CryptoManager {
       await this.keyManager.clearAllKeys();
       this.conversationStates.clear();
       this.encryptionStatus.clear();
-      
-      this.emit('allDataCleared');
+
+      this.emit("allDataCleared");
     } catch (error) {
       const cryptoError: CryptoError = {
-        code: 'CLEAR_ALL_ERROR',
-        message: 'Failed to clear all crypto data',
+        code: "CLEAR_ALL_ERROR",
+        message: "Failed to clear all crypto data",
       };
-      this.emit('error', cryptoError);
+      this.emit("error", cryptoError);
       throw error;
     }
   }
 
-  async exportConversationState(conversationId: string): Promise<string | null> {
+  async exportConversationState(
+    conversationId: string
+  ): Promise<string | null> {
     const state = this.conversationStates.get(conversationId);
     if (!state) return null;
 
-    const ratchetState = await this.doubleRatchet.exportRatchetState(conversationId);
+    const ratchetState = await this.doubleRatchet.exportRatchetState(
+      conversationId
+    );
     const status = this.getEncryptionStatus(conversationId);
 
     return JSON.stringify({
@@ -304,24 +326,26 @@ export class CryptoManager {
     conversationCount: number;
   }> {
     const issues: string[] = [];
-    
+
     if (!WebCryptoUtils.isWebCryptoSupported()) {
-      issues.push('Web Crypto API not supported');
+      issues.push("Web Crypto API not supported");
     }
 
     if (!this.keyManager.isInitialized()) {
-      issues.push('Key manager not initialized');
+      issues.push("Key manager not initialized");
     }
 
     const conversationCount = this.conversationStates.size;
-    
+
     for (const [conversationId, state] of this.conversationStates) {
       if (!state.isInitialized) {
         issues.push(`Conversation ${conversationId} not properly initialized`);
       }
-      
+
       if (!this.doubleRatchet.isInitialized(conversationId)) {
-        issues.push(`Double ratchet not initialized for conversation ${conversationId}`);
+        issues.push(
+          `Double ratchet not initialized for conversation ${conversationId}`
+        );
       }
     }
 
@@ -353,11 +377,11 @@ export class CryptoManager {
   private emit(event: string, data?: unknown): void {
     const handlers = this.eventHandlers.get(event);
     if (handlers) {
-      handlers.forEach(handler => {
+      handlers.forEach((handler) => {
         try {
           handler(data);
         } catch (error) {
-          console.error('Error in crypto event handler:', error);
+          console.error("Error in crypto event handler:", error);
         }
       });
     }

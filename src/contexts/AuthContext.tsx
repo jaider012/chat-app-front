@@ -1,6 +1,12 @@
-import React, { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import type { AuthState } from '../types';
-import { apiService } from '../services/api';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
+import type { AuthState } from "../types";
+import { apiService } from "../services/api";
 
 interface AuthContextType extends AuthState {
   login: (token: string) => Promise<void>;
@@ -9,10 +15,11 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
@@ -30,23 +37,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   });
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (token) {
       apiService.setToken(token);
       fetchUser(token);
     } else {
-      setAuthState(prev => ({ ...prev, isLoading: false }));
+      setAuthState((prev) => ({ ...prev, isLoading: false }));
     }
   }, []);
 
   const fetchUser = async (token: string) => {
     try {
-      console.log('Fetching user profile with token:', token);
+      console.log("Fetching user profile with token:", token);
       const response = await apiService.getProfile();
-      console.log('Profile response:', response);
-      
+      console.log("Profile response:", response);
+
       if (response.success && response.data) {
-        console.log('User authenticated successfully:', response.data);
+        console.log("User authenticated successfully:", response.data);
         setAuthState({
           user: response.data,
           token,
@@ -54,11 +61,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           isLoading: false,
         });
       } else {
-        throw new Error('Failed to fetch user profile');
+        throw new Error("Failed to fetch user profile");
       }
     } catch (error) {
-      console.error('Error fetching user:', error);
-      localStorage.removeItem('token');
+      console.error("Error fetching user:", error);
+      localStorage.removeItem("token");
       apiService.setToken(null);
       setAuthState({
         user: null,
@@ -70,8 +77,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const login = async (token: string) => {
-    console.log('Login called with token:', token);
-    localStorage.setItem('token', token);
+    console.log("Login called with token:", token);
+    localStorage.setItem("token", token);
     apiService.setToken(token);
     await fetchUser(token);
   };
@@ -80,9 +87,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       await apiService.logout();
     } catch (error) {
-      console.error('Error during logout:', error);
+      console.error("Error during logout:", error);
     } finally {
-      localStorage.removeItem('token');
+      localStorage.removeItem("token");
       apiService.setToken(null);
       setAuthState({
         user: null,
@@ -99,9 +106,5 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
