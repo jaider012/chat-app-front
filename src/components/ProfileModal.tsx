@@ -2,6 +2,8 @@ import React from 'react';
 import { X, LogOut, User as UserIcon, Palette } from 'lucide-react';
 import type { ProfileModalProps } from '../types';
 import ThemeToggle from './ThemeToggle';
+import { useModalKeyHandler } from '../hooks/useModalKeyHandler';
+import { useLogout } from '../hooks/useLogout';
 
 const ProfileModal: React.FC<ProfileModalProps> = ({
   isOpen,
@@ -9,16 +11,17 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   user,
   onLogout,
 }) => {
-  const handleLogout = () => {
-    onLogout();
-    onClose();
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
+  const { handleLogout } = useLogout({
+    onLogout: () => {
+      onLogout();
       onClose();
     }
-  };
+  });
+
+  const { handleKeyDown } = useModalKeyHandler({
+    isOpen,
+    onClose
+  });
 
   if (!isOpen) return null;
 

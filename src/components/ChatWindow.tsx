@@ -2,9 +2,14 @@ import React, { useState, useRef, useEffect } from "react";
 import { Send, Shield } from "lucide-react";
 import type { ChatWindowProps } from "../types";
 import { getUserDisplayName, formatMessageTime } from "../utils/dataHelpers";
+import { scrollToBottom } from "../utils/scrollHelpers";
 import { EncryptionIndicator, EncryptionStatusPanel } from "./ui/EncryptionIndicator";
 import { useEncryption } from "../hooks/useCrypto";
 import { useSocket } from "../contexts/SocketContext";
+import { useTypingIndicator } from "../hooks/useTypingIndicator";
+import { useMessageSender } from "../hooks/useMessageSender";
+import { useTextareaKeyHandler } from "../hooks/useTextareaKeyHandler";
+import { useConversationParticipants } from "../hooks/useConversationParticipants";
 import { EncryptionStatus } from "../crypto/types";
 
 const ChatWindow: React.FC<ChatWindowProps> = ({
@@ -25,68 +30,47 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [, setIsInputFocused] = useState(false);
   const [showEncryptionPanel, setShowEncryptionPanel] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const { initiateKeyExchange } = useSocket();
   const { status: encryptionStatus, isSecure } = useEncryption(conversation?.id || '');
+  const { otherParticipant } = useConversationParticipants({ conversation, currentUser });
+  
+  // Custom hooks for component logic
+  const { handleInputChange: handleTypingChange, handleStopTyping, cleanup: cleanupTyping } = useTypingIndicator({
+    onStartTyping,
+    onStopTyping,
+    timeout: 1000
+  });
 
-  const otherParticipant = conversation?.participants?.find(
-    (p) => p.id !== currentUser?.id
-  );
+  const { handleSendMessage, canSendMessage } = useMessageSender({
+    onSendMessage: (content) => onSendMessage?.(content),
+    onClear: () => setMessageInput(''),
+    onError: (error) => console.error('Send message error:', error)
+  });
+
+  const { handleKeyDown } = useTextareaKeyHandler({
+    onSubmit: (event) => handleSendMessage(event, messageInput),
+    submitKey: 'Enter'
+  });
 
   useEffect(() => {
-    scrollToBottom();
+    scrollToBottom(messagesEndRef);
   }, [messages]);
 
   useEffect(() => {
     if (isTyping) {
-      scrollToBottom();
+      scrollToBottom(messagesEndRef);
     }
   }, [isTyping]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      if (messageInput.trim() && onSendMessage) {
-        onSendMessage(messageInput.trim());
-        setMessageInput("");
-        handleStopTyping();
-      }
-    } catch (error) {
-      console.error("Error in handleSendMessage:", error);
-    }
-  };
+  useEffect(() => {
+    return cleanupTyping;
+  }, [cleanupTyping]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setMessageInput(e.target.value);
-
-    if (e.target.value.trim() && onStartTyping) {
-      onStartTyping();
-
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-
-      typingTimeoutRef.current = setTimeout(() => {
-        handleStopTyping();
-      }, 1000);
-    } else if (!e.target.value.trim()) {
-      handleStopTyping();
-    }
-  };
-
-  const handleStopTyping = () => {
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-      typingTimeoutRef.current = null;
-    }
-    if (onStopTyping) {
-      onStopTyping();
-    }
+    const value = e.target.value;
+    setMessageInput(value);
+    handleTypingChange(value);
   };
 
   const handleSetupEncryption = async () => {
@@ -99,12 +83,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage(e);
-    }
-  };
 
   // Verify that we have the necessary data
   if (!conversation || !currentUser) {
@@ -241,7 +219,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       </div>
 
       <form
-        onSubmit={handleSendMessage}
+        onSubmit={(e) => handleSendMessage(e, messageInput)}
         className="p-4 border-t border-gray-200 bg-white flex-shrink-0"
       >
         {encryptionStatus === EncryptionStatus.NOT_INITIALIZED && (
@@ -293,9 +271,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           <div className="flex justify-center h-full">
             <button
               type="submit"
-              disabled={!messageInput.trim()}
+              disabled={!canSendMessage(messageInput)}
               className={`p-2 sm:p-3 rounded-lg transition-colors ${
-                messageInput.trim()
+                canSendMessage(messageInput)
                   ? "bg-secondary text-white hover:bg-secondary/90"
                   : "bg-gray-200 text-gray-400 cursor-not-allowed"
               }`}
