@@ -1,6 +1,8 @@
 import React from 'react';
 import { Sun, Moon } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { sizeClasses, buttonSizeClasses, getSizeClass } from '../utils/styleHelpers';
+import { getThemeToggleLabel, getThemeToggleTitle, getThemeToggleAriaLabel } from '../utils/themeHelpers';
 
 interface ThemeToggleProps {
   size?: 'sm' | 'md' | 'lg';
@@ -15,39 +17,30 @@ const ThemeToggle: React.FC<ThemeToggleProps> = ({
 }) => {
   const { theme, toggleTheme } = useTheme();
 
-  const sizeClasses = {
-    sm: 'w-4 h-4',
-    md: 'w-5 h-5',
-    lg: 'w-6 h-6'
-  };
-
-  const buttonSizeClasses = {
-    sm: 'p-1.5',
-    md: 'p-2',
-    lg: 'p-3'
-  };
+  const iconSize = getSizeClass(sizeClasses, size, 'w-5 h-5');
+  const buttonSize = getSizeClass(buttonSizeClasses, size, 'p-2');
 
   return (
     <button
       onClick={toggleTheme}
       className={`
-        ${buttonSizeClasses[size]} 
+        ${buttonSize} 
         hover:bg-gray-100 dark:hover:bg-gray-700 
         rounded-full transition-colors duration-200 
         flex items-center space-x-2
         ${className}
       `}
-      title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-      aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+      title={getThemeToggleTitle(theme)}
+      aria-label={getThemeToggleAriaLabel(theme)}
     >
       {theme === 'light' ? (
-        <Moon className={`${sizeClasses[size]} text-gray-600 dark:text-gray-300`} />
+        <Moon className={`${iconSize} text-gray-600 dark:text-gray-300`} />
       ) : (
-        <Sun className={`${sizeClasses[size]} text-gray-600 dark:text-gray-300`} />
+        <Sun className={`${iconSize} text-gray-600 dark:text-gray-300`} />
       )}
       {showLabel && (
         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          {theme === 'light' ? 'Dark' : 'Light'}
+          {getThemeToggleLabel(theme)}
         </span>
       )}
     </button>

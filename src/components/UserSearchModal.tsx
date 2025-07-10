@@ -1,67 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Search, X, Loader2 } from 'lucide-react';
-import type { UserSearchModalProps, User } from '../types';
-import { apiService } from '../services/api';
+import type { UserSearchModalProps } from '../types';
+import { useUserSearch } from '../hooks/useUserSearch';
+import { useModalKeyHandler } from '../hooks/useModalKeyHandler';
 
 const UserSearchModal: React.FC<UserSearchModalProps> = ({
   isOpen,
   onClose,
   onSelectUser,
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [users, setUsers] = useState<User[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    searchTerm,
+    filteredUsers,
+    isLoading,
+    error,
+    setSearchTerm,
+    loadUsers,
+    handleSelectUser
+  } = useUserSearch({
+    isEnabled: isOpen
+  });
 
-  useEffect(() => {
-    if (isOpen) {
-      loadUsers();
-      setSearchTerm('');
-      setError(null);
-    }
-  }, [isOpen]);
+  const { handleKeyDown } = useModalKeyHandler({
+    isOpen,
+    onClose
+  });
 
-  useEffect(() => {
-    if (searchTerm.trim()) {
-      const filtered = users.filter(user =>
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredUsers(filtered);
-    } else {
-      setFilteredUsers(users);
-    }
-  }, [searchTerm, users]);
-
-  const loadUsers = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await apiService.getUsers();
-      if (response.success && response.data) {
-        setUsers(response.data);
-        setFilteredUsers(response.data);
-      } else {
-        setError('Failed to load users');
-      }
-    } catch (error) {
-      setError('Error loading users');
-      console.error('Error loading users:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSelectUser = (user: User) => {
-    onSelectUser(user);
-    onClose();
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
+  const handleUserSelection = (user: any) => {
+    handleSelectUser(user, (selectedUser) => {
+      onSelectUser(selectedUser);
       onClose();
-    }
+    });
   };
 
   if (!isOpen) return null;
@@ -122,7 +91,7 @@ const UserSearchModal: React.FC<UserSearchModalProps> = ({
               {filteredUsers.map((user) => (
                 <button
                   key={user.id}
-                  onClick={() => handleSelectUser(user)}
+                  onClick={() => handleUserSelection(user)}
                   className="w-full flex items-center space-x-3 p-4 hover:bg-gray-50 rounded-lg transition-colors touch-manipulation"
                 >
                   <div className="relative">

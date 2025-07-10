@@ -1,7 +1,12 @@
 import React from 'react';
-import { Shield, ShieldCheck, ShieldX, ShieldAlert, Loader2 } from 'lucide-react';
 import { EncryptionStatus } from '../../crypto/types';
 import { useEncryption } from '../../hooks/useCrypto';
+import { 
+  encryptionStatusConfig, 
+  encryptionSizeConfig, 
+  getEncryptionStatusConfig, 
+  getEncryptionSizeConfig 
+} from '../../utils/encryptionHelpers';
 
 interface EncryptionIndicatorProps {
   conversationId: string;
@@ -10,61 +15,6 @@ interface EncryptionIndicatorProps {
   className?: string;
 }
 
-const statusConfig = {
-  [EncryptionStatus.NOT_INITIALIZED]: {
-    icon: Shield,
-    color: 'text-gray-400',
-    bgColor: 'bg-gray-100',
-    text: 'Not encrypted',
-    description: 'Messages are not encrypted',
-  },
-  [EncryptionStatus.INITIALIZING]: {
-    icon: Loader2,
-    color: 'text-blue-500',
-    bgColor: 'bg-blue-100',
-    text: 'Initializing...',
-    description: 'Setting up encryption',
-  },
-  [EncryptionStatus.KEY_EXCHANGE_PENDING]: {
-    icon: ShieldAlert,
-    color: 'text-yellow-500',
-    bgColor: 'bg-yellow-100',
-    text: 'Key exchange pending',
-    description: 'Waiting for encryption setup',
-  },
-  [EncryptionStatus.ACTIVE]: {
-    icon: ShieldCheck,
-    color: 'text-green-500',
-    bgColor: 'bg-green-100',
-    text: 'Encrypted',
-    description: 'End-to-end encrypted',
-  },
-  [EncryptionStatus.ERROR]: {
-    icon: ShieldX,
-    color: 'text-red-500',
-    bgColor: 'bg-red-100',
-    text: 'Error',
-    description: 'Encryption error',
-  },
-};
-
-const sizeConfig = {
-  sm: {
-    icon: 'w-4 h-4',
-    container: 'px-2 py-1 text-xs',
-    text: 'text-xs',
-  },
-  md: {
-    icon: 'w-5 h-5',
-    container: 'px-3 py-2 text-sm',
-    text: 'text-sm',
-  },
-  lg: {
-    icon: 'w-6 h-6',
-    container: 'px-4 py-3 text-base',
-    text: 'text-base',
-  },
-};
 
 export const EncryptionIndicator: React.FC<EncryptionIndicatorProps> = ({
   conversationId,
@@ -73,8 +23,8 @@ export const EncryptionIndicator: React.FC<EncryptionIndicatorProps> = ({
   className = '',
 }) => {
   const { status } = useEncryption(conversationId);
-  const config = statusConfig[status];
-  const sizes = sizeConfig[size];
+  const config = getEncryptionStatusConfig(status);
+  const sizes = getEncryptionSizeConfig(size);
 
   const IconComponent = config.icon;
 
@@ -120,7 +70,7 @@ export const EncryptionStatusBadge: React.FC<EncryptionStatusBadgeProps> = ({
   className = '',
 }) => {
   const { status } = useEncryption(conversationId);
-  const config = statusConfig[status];
+  const config = getEncryptionStatusConfig(status);
 
   return (
     <div
@@ -142,7 +92,7 @@ export const EncryptionTooltip: React.FC<EncryptionTooltipProps> = ({
   children,
 }) => {
   const { status, error } = useEncryption(conversationId);
-  const config = statusConfig[status];
+  const config = getEncryptionStatusConfig(status);
 
   return (
     <div className="relative group">
@@ -173,7 +123,7 @@ export const EncryptionStatusPanel: React.FC<EncryptionStatusPanelProps> = ({
   className = '',
 }) => {
   const { status, error, initiateKeyExchange, clearKeys } = useEncryption(conversationId);
-  const config = statusConfig[status];
+  const config = getEncryptionStatusConfig(status);
 
   const handleInitiateEncryption = async () => {
     try {
