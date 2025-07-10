@@ -11,6 +11,7 @@ import ChatWindow from '../components/ChatWindow';
 import ErrorBoundary from '../components/ErrorBoundary';
 import UserSearchModal from '../components/UserSearchModal';
 import ProfileModal from '../components/ProfileModal';
+import ThemeToggle from '../components/ThemeToggle';
 
 const DashboardPage: React.FC = () => {
   const { user, logout } = useAuth();
@@ -291,7 +292,7 @@ const DashboardPage: React.FC = () => {
   }
 
   return (
-    <div className="h-screen bg-background-light flex relative">
+    <div className="h-screen bg-background-light dark:bg-gray-900 flex relative">
       {/* Mobile Menu Overlay */}
       {isMobile && isMobileMenuOpen && (
         <div 
@@ -304,25 +305,26 @@ const DashboardPage: React.FC = () => {
       <div className={`
         ${isMobile ? 'fixed inset-y-0 left-0 z-50 w-80 transform transition-transform duration-300 ease-in-out' : 'w-1/3 lg:w-1/4 xl:w-1/3'}
         ${isMobile && !isMobileMenuOpen ? '-translate-x-full' : 'translate-x-0'}
-        bg-white border-r border-gray-200 flex flex-col
+        bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col
       `}>
-        <div className="p-4 border-b border-gray-200">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl font-header text-primary">Messages</h1>
+            <h1 className="text-xl font-header text-primary dark:text-gray-100">Messages</h1>
             <div className="flex items-center space-x-2">
               {/* Mobile Close Button */}
               {isMobile && (
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
                   title="Close menu"
                 >
-                  <X className="w-5 h-5 text-gray-600" />
+                  <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                 </button>
               )}
+              <ThemeToggle size="sm" className="text-gray-600 dark:text-gray-300" />
               <button
                 onClick={() => setIsUserSearchOpen(true)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
                 title="Start new conversation"
               >
                 <Plus className="w-5 h-5 text-secondary" />
@@ -344,7 +346,7 @@ const DashboardPage: React.FC = () => {
               placeholder="Search conversations..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           </div>
         </div>
@@ -379,12 +381,12 @@ const DashboardPage: React.FC = () => {
           <ErrorBoundary>
             {/* Mobile Header */}
             {isMobile && (
-              <div className="flex items-center p-4 bg-white border-b border-gray-200">
+              <div className="flex items-center p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                 <button
                   onClick={() => setIsMobileMenuOpen(true)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors mr-3"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors mr-3"
                 >
-                  <ArrowLeft className="w-5 h-5 text-gray-600" />
+                  <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                 </button>
                 <div className="flex items-center space-x-3">
                   <div className="relative">
@@ -396,10 +398,10 @@ const DashboardPage: React.FC = () => {
                     )}
                   </div>
                   <div>
-                    <h2 className="font-medium text-gray-900 text-sm">
+                    <h2 className="font-medium text-gray-900 dark:text-gray-100 text-sm">
                       {selectedConversation.participants.find(p => p.id !== user?.id)?.name || 'Unknown User'}
                     </h2>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       {selectedConversation.participants.find(p => p.id !== user?.id)?.isOnline ? 'Online' : 'Offline'}
                     </p>
                   </div>
@@ -420,14 +422,14 @@ const DashboardPage: React.FC = () => {
           <div className="flex-1 flex flex-col">
             {/* Mobile Header for Empty State */}
             {isMobile && (
-              <div className="flex items-center p-4 bg-white border-b border-gray-200">
+              <div className="flex items-center p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                 <button
                   onClick={() => setIsMobileMenuOpen(true)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors mr-3"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors mr-3"
                 >
-                  <Menu className="w-5 h-5 text-gray-600" />
+                  <Menu className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                 </button>
-                <h1 className="text-lg font-medium text-gray-900">Messages</h1>
+                <h1 className="text-lg font-medium text-gray-900 dark:text-gray-100">Messages</h1>
               </div>
             )}
             <div className="flex-1 flex items-center justify-center p-8">

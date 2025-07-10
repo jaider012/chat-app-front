@@ -1,6 +1,7 @@
 import React from 'react';
-import { X, LogOut, User as UserIcon } from 'lucide-react';
+import { X, LogOut, User as UserIcon, Palette } from 'lucide-react';
 import type { ProfileModalProps } from '../types';
+import ThemeToggle from './ThemeToggle';
 
 const ProfileModal: React.FC<ProfileModalProps> = ({
   isOpen,
@@ -47,22 +48,33 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         </div>
 
         <div className="space-y-3">
-          <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-            <UserIcon className="w-5 h-5 text-gray-500" />
+          <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <UserIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
             <div>
-              <p className="text-sm font-medium text-gray-900">Full Name</p>
-              <p className="text-sm text-gray-500">{user?.name}</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Full Name</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{user?.name}</p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
             </svg>
             <div>
-              <p className="text-sm font-medium text-gray-900">Email</p>
-              <p className="text-sm text-gray-500">{user?.email}</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Email</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{user?.email}</p>
             </div>
+          </div>
+
+          <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <div className="flex items-center space-x-3">
+              <Palette className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <div>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Theme</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Choose your preferred theme</p>
+              </div>
+            </div>
+            <ThemeToggle size="md" showLabel />
           </div>
         </div>
 

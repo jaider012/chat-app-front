@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SocketProvider } from './contexts/SocketContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import TestAuthPage from './pages/TestAuthPage';
@@ -109,7 +110,9 @@ const AppRoutes: React.FC = () => {
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <AppRoutes />
+      <ThemeProvider>
+        <AppRoutes />
+      </ThemeProvider>
     </AuthProvider>
   );
 };
