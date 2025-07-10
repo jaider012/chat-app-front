@@ -3,7 +3,7 @@ import { Send, Shield } from "lucide-react";
 import type { ChatWindowProps } from "../types";
 import { getUserDisplayName, formatMessageTime } from "../utils/dataHelpers";
 import { EncryptionIndicator, EncryptionStatusPanel } from "./ui/EncryptionIndicator";
-import { useEncryption, useKeyExchange } from "../hooks/useCrypto";
+import { useEncryption } from "../hooks/useCrypto";
 import { useSocket } from "../contexts/SocketContext";
 import { EncryptionStatus } from "../crypto/types";
 

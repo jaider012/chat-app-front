@@ -19,7 +19,7 @@ export class CryptoManager {
   private config: CryptoManagerConfig;
   private conversationStates: Map<string, ConversationCryptoState> = new Map();
   private encryptionStatus: Map<string, EncryptionStatus> = new Map();
-  private eventHandlers: Map<string, ((data?: any) => void)[]> = new Map();
+  private eventHandlers: Map<string, ((data?: unknown) => void)[]> = new Map();
 
   constructor(config: CryptoManagerConfig = {}) {
     this.keyManager = new KeyManager();
@@ -56,13 +56,13 @@ export class CryptoManager {
       const userKeys = await this.keyManager.generateUserKeys();
       this.emit('keysGenerated', userKeys);
       return userKeys;
-    } catch (error) {
+    } catch (err) {
       const cryptoError: CryptoError = {
         code: 'KEY_GENERATION_ERROR',
         message: 'Failed to generate user keys',
       };
       this.emit('error', cryptoError);
-      throw error;
+      throw err;
     }
   }
 
@@ -333,14 +333,14 @@ export class CryptoManager {
   }
 
   // Event system for crypto operations
-  on(event: string, handler: (data?: any) => void): void {
+  on(event: string, handler: (data?: unknown) => void): void {
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, []);
     }
     this.eventHandlers.get(event)!.push(handler);
   }
 
-  off(event: string, handler: (data?: any) => void): void {
+  off(event: string, handler: (data?: unknown) => void): void {
     const handlers = this.eventHandlers.get(event);
     if (handlers) {
       const index = handlers.indexOf(handler);

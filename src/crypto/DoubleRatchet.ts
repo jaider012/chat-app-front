@@ -244,7 +244,7 @@ export class DoubleRatchet {
     return state ? state.skippedKeys.size : 0;
   }
 
-  cleanupSkippedKeys(conversationId: string, maxAge: number = 24 * 60 * 60 * 1000): void {
+  cleanupSkippedKeys(conversationId: string): void {
     const state = this.states.get(conversationId);
     if (!state) return;
 

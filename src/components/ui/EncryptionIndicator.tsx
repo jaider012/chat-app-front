@@ -72,7 +72,7 @@ export const EncryptionIndicator: React.FC<EncryptionIndicatorProps> = ({
   showText = false,
   className = '',
 }) => {
-  const { status, isSecure, error } = useEncryption(conversationId);
+  const { status } = useEncryption(conversationId);
   const config = statusConfig[status];
   const sizes = sizeConfig[size];
 

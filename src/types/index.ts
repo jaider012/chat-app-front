@@ -1,3 +1,5 @@
+import { Socket } from 'socket.io-client';
+
 export interface User {
   id: string;
   email: string;
@@ -40,7 +42,7 @@ export interface AuthState {
 }
 
 export interface SocketContextType {
-  socket: any;
+  socket: Socket | null;
   isConnected: boolean;
   sendMessage: (conversationId: string, content: string, useEncryption?: boolean) => Promise<void>;
   startTyping: (conversationId: string) => void;
