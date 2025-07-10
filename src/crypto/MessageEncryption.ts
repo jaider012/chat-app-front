@@ -44,7 +44,7 @@ export class MessageEncryption {
       const decryptedText = await WebCryptoUtils.decrypt(encryptedData, sharedSecret, nonce);
       this.recordSequenceNumber(encryptedMessage.sequenceNumber, encryptedMessage.conversationId);
       return decryptedText;
-    } catch (error) {
+    } catch {
       throw new Error('Failed to decrypt message - invalid key or corrupted data');
     }
   }
@@ -161,7 +161,7 @@ export class MessageEncryption {
   async verifyAuthenticatedMessage(
     encryptedMessage: EncryptedMessage,
     sharedSecret: CryptoKey
-  ): Promise<{ message: string; metadata: any }> {
+  ): Promise<{ message: string; metadata: unknown }> {
     const decrypted = await this.decryptMessage(encryptedMessage, sharedSecret);
     const separatorIndex = decrypted.indexOf(':');
     
@@ -189,7 +189,7 @@ export class MessageEncryption {
       }
       
       return { message, metadata };
-    } catch (error) {
+    } catch {
       throw new Error('Failed to verify message authenticity');
     }
   }

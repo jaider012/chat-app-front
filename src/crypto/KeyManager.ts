@@ -1,5 +1,5 @@
 import { WebCryptoUtils } from './WebCryptoUtils';
-import { UserKeyPair, StoredKey, CryptoError } from './types';
+import { UserKeyPair, StoredKey } from './types';
 
 export class KeyManager {
   private static readonly STORAGE_KEY = 'chat-app-crypto-keys';
@@ -123,7 +123,7 @@ export class KeyManager {
           
           await this.updateLastUsed(conversationId);
           resolve(sharedSecret);
-        } catch (error) {
+        } catch {
           reject(new Error('Failed to import stored key'));
         }
       };

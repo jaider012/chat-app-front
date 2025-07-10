@@ -1,5 +1,6 @@
 import { WebCryptoUtils } from './WebCryptoUtils';
 import { MessageEncryption } from './MessageEncryption';
+import { EncryptedMessage } from './types';
 
 interface RatchetState {
   rootKey: CryptoKey;
@@ -59,7 +60,7 @@ export class DoubleRatchet {
     plaintext: string,
     conversationId: string,
     sender: string
-  ): Promise<any> {
+  ): Promise<EncryptedMessage & { ratchetPublicKey?: string; previousCounter: number }> {
     const state = this.states.get(conversationId);
     if (!state || !state.isInitialized) {
       throw new Error('Ratchet not initialized for conversation');
@@ -84,7 +85,7 @@ export class DoubleRatchet {
   }
 
   async decryptMessage(
-    encryptedMessage: any,
+    encryptedMessage: EncryptedMessage & { ratchetPublicKey?: string; previousCounter?: number },
     conversationId: string
   ): Promise<string> {
     const state = this.states.get(conversationId);
@@ -177,7 +178,7 @@ export class DoubleRatchet {
 
   private async trySkippedMessageKeys(
     state: RatchetState,
-    encryptedMessage: any
+    encryptedMessage: EncryptedMessage & { ratchetPublicKey?: string; previousCounter?: number }
   ): Promise<CryptoKey | null> {
     const keyId = `${encryptedMessage.ratchetPublicKey || 'current'}:${encryptedMessage.sequenceNumber}`;
     const messageKey = state.skippedKeys.get(keyId);
@@ -247,7 +248,6 @@ export class DoubleRatchet {
     const state = this.states.get(conversationId);
     if (!state) return;
 
-    const cutoff = Date.now() - maxAge;
     const keysToRemove: string[] = [];
     
     for (const [keyId] of state.skippedKeys) {

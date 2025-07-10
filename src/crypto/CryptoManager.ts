@@ -333,14 +333,14 @@ export class CryptoManager {
   }
 
   // Event system for crypto operations
-  on(event: string, handler: Function): void {
+  on(event: string, handler: (data?: any) => void): void {
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, []);
     }
     this.eventHandlers.get(event)!.push(handler);
   }
 
-  off(event: string, handler: Function): void {
+  off(event: string, handler: (data?: any) => void): void {
     const handlers = this.eventHandlers.get(event);
     if (handlers) {
       const index = handlers.indexOf(handler);
@@ -350,7 +350,7 @@ export class CryptoManager {
     }
   }
 
-  private emit(event: string, data?: any): void {
+  private emit(event: string, data?: unknown): void {
     const handlers = this.eventHandlers.get(event);
     if (handlers) {
       handlers.forEach(handler => {
