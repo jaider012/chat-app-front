@@ -1,67 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Search, X, Loader2 } from 'lucide-react';
-import type { UserSearchModalProps, User } from '../types';
-import { apiService } from '../services/api';
+import type { UserSearchModalProps } from '../types';
+import { useUserSearch } from '../hooks/useUserSearch';
+import { useModalKeyHandler } from '../hooks/useModalKeyHandler';
+import { getUserDisplayName } from '../utils/dataHelpers';
 
 const UserSearchModal: React.FC<UserSearchModalProps> = ({
   isOpen,
   onClose,
   onSelectUser,
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [users, setUsers] = useState<User[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    searchTerm,
+    filteredUsers,
+    isLoading,
+    error,
+    setSearchTerm,
+    loadUsers,
+    handleSelectUser
+  } = useUserSearch({
+    isEnabled: isOpen
+  });
 
-  useEffect(() => {
-    if (isOpen) {
-      loadUsers();
-      setSearchTerm('');
-      setError(null);
-    }
-  }, [isOpen]);
+  const { handleKeyDown } = useModalKeyHandler({
+    isOpen,
+    onClose
+  });
 
-  useEffect(() => {
-    if (searchTerm.trim()) {
-      const filtered = users.filter(user =>
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredUsers(filtered);
-    } else {
-      setFilteredUsers(users);
-    }
-  }, [searchTerm, users]);
-
-  const loadUsers = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await apiService.getUsers();
-      if (response.success && response.data) {
-        setUsers(response.data);
-        setFilteredUsers(response.data);
-      } else {
-        setError('Failed to load users');
-      }
-    } catch (error) {
-      setError('Error loading users');
-      console.error('Error loading users:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSelectUser = (user: User) => {
-    onSelectUser(user);
-    onClose();
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
+  const handleUserSelection = (user: any) => {
+    handleSelectUser(user, (selectedUser) => {
+      onSelectUser(selectedUser);
       onClose();
-    }
+    });
   };
 
   if (!isOpen) return null;
@@ -69,17 +39,17 @@ const UserSearchModal: React.FC<UserSearchModalProps> = ({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div 
-        className="modal-content animate-scale-up"
+        className="w-full h-full sm:w-auto sm:h-auto sm:max-w-md sm:mx-4 bg-white sm:rounded-lg p-6 shadow-xl animate-scale-up overflow-y-auto flex flex-col"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-header text-primary">Start a new conversation</h2>
+          <h2 className="text-lg sm:text-xl font-header text-primary">Start a new conversation</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors touch-manipulation"
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-6 h-6 sm:w-5 sm:h-5 text-gray-500" />
           </button>
         </div>
 
@@ -90,12 +60,12 @@ const UserSearchModal: React.FC<UserSearchModalProps> = ({
             placeholder="Search users..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent text-base"
             autoFocus
           />
         </div>
 
-        <div className="max-h-96 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-secondary" />
@@ -122,8 +92,8 @@ const UserSearchModal: React.FC<UserSearchModalProps> = ({
               {filteredUsers.map((user) => (
                 <button
                   key={user.id}
-                  onClick={() => handleSelectUser(user)}
-                  className="w-full flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                  onClick={() => handleUserSelection(user)}
+                  className="w-full flex items-center space-x-3 p-4 hover:bg-gray-50 rounded-lg transition-colors touch-manipulation"
                 >
                   <div className="relative">
                     <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-medium">
@@ -134,7 +104,7 @@ const UserSearchModal: React.FC<UserSearchModalProps> = ({
                     )}
                   </div>
                   <div className="flex-1 text-left">
-                    <p className="font-medium text-gray-900">{user.name}</p>
+                    <p className="font-medium text-gray-900">{getUserDisplayName(user)}</p>
                     <p className="text-sm text-gray-500">{user.email}</p>
                   </div>
                   {user.isOnline && (

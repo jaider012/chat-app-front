@@ -2,6 +2,8 @@ import React, { createContext, useContext, useEffect, useState, type ReactNode }
 import { io, Socket } from 'socket.io-client';
 import type { SocketContextType } from '../types';
 import { useAuth } from './AuthContext';
+import { useCryptoContext } from './CryptoContext';
+import { type EncryptedMessage, EncryptionStatus } from '../crypto/types';
 
 const SocketContext = createContext<SocketContextType | null>(null);
 
@@ -21,6 +23,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const { token, isAuthenticated } = useAuth();
+  const crypto = useCryptoContext();
 
   useEffect(() => {
     if (isAuthenticated && token) {
@@ -45,6 +48,56 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         setIsConnected(false);
       });
 
+      // Handle incoming encrypted messages
+      newSocket.on('encryptedMessage', async (data: EncryptedMessage) => {
+        try {
+          if (crypto.isInitialized) {
+            const decryptedContent = await crypto.decryptMessage(data);
+            // Emit the decrypted message to the application
+            newSocket.emit('messageDecrypted', {
+              ...data,
+              content: decryptedContent,
+              isEncrypted: true,
+            });
+          }
+        } catch (error) {
+          console.error('Failed to decrypt message:', error);
+          // Still emit the message but mark it as failed to decrypt
+          newSocket.emit('messageDecryptionFailed', {
+            ...data,
+            error: 'Failed to decrypt message',
+          });
+        }
+      });
+
+      // Handle key exchange requests
+      newSocket.on('keyExchangeRequest', async (data: { conversationId: string; publicKey: string; sender: string }) => {
+        try {
+          if (crypto.isInitialized) {
+            await crypto.completeKeyExchange(data.conversationId, data.publicKey);
+            const myPublicKey = await crypto.getUserPublicKey();
+            newSocket.emit('keyExchangeResponse', {
+              conversationId: data.conversationId,
+              publicKey: myPublicKey,
+              recipient: data.sender,
+            });
+          }
+        } catch (error) {
+          console.error('Failed to handle key exchange request:', error);
+        }
+      });
+
+      // Handle key exchange responses
+      newSocket.on('keyExchangeResponse', async (data: { conversationId: string; publicKey: string }) => {
+        try {
+          if (crypto.isInitialized) {
+            await crypto.completeKeyExchange(data.conversationId, data.publicKey);
+          }
+        } catch (error) {
+          console.error('Failed to handle key exchange response:', error);
+        }
+      });
+
       setSocket(newSocket);
 
       return () => {
@@ -57,12 +110,33 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     }
   }, [isAuthenticated, token]);
 
-  const sendMessage = (conversationId: string, content: string) => {
-    if (socket && isConnected) {
-      console.log('SocketContext: Emitting sendMessage', { conversationId, content });
+  const sendMessage = async (conversationId: string, content: string, useEncryption: boolean = true) => {
+    if (!socket || !isConnected) return;
+
+    try {
+      if (useEncryption && crypto.isInitialized && crypto.getEncryptionStatus(conversationId) === EncryptionStatus.ACTIVE) {
+        // Send encrypted message
+        const encryptedMessage = await crypto.encryptMessage(content, conversationId);
+        socket.emit('sendEncryptedMessage', encryptedMessage);
+      } else {
+        // Send plain message
+        socket.emit('sendMessage', { conversationId, content });
+      }
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      // Fallback to plain message
       socket.emit('sendMessage', { conversationId, content });
-    } else {
-      console.error('SocketContext: Cannot send message - socket not connected', { socket: !!socket, isConnected });
+    }
+  };
+
+  const initiateKeyExchange = async (conversationId: string) => {
+    if (!socket || !isConnected || !crypto.isInitialized) return;
+
+    try {
+      const keyExchangeData = await crypto.startKeyExchange(conversationId);
+      socket.emit('keyExchangeRequest', keyExchangeData);
+    } catch (error) {
+      console.error('Failed to initiate key exchange:', error);
     }
   };
 
@@ -84,6 +158,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     sendMessage,
     startTyping,
     stopTyping,
+    initiateKeyExchange,
   };
 
   return (

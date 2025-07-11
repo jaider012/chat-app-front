@@ -56,3 +56,28 @@ export const getUserDisplayName = (user: User | undefined): string => {
 export const getUserAvatar = (user: User): string | undefined => {
   return user.avatar || user.profilePicture;
 };
+
+export const formatMessageTime = (timestamp: string): string => {
+  const date = new Date(timestamp);
+  const now = new Date();
+
+  // Convert to local timezone
+  const localDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+
+  const diffInMinutes = Math.floor((now.getTime() - localDate.getTime()) / (1000 * 60));
+
+  if (diffInMinutes < 1) return 'Now';
+  if (diffInMinutes < 60) return `${diffInMinutes} min ago`;
+
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `${diffInHours} h ago`;
+
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 7) return `${diffInDays} d ago`;
+
+  return localDate.toLocaleDateString('en-US', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+};
