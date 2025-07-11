@@ -1,69 +1,77 @@
-# React + TypeScript + Vite
+# Aplicación de Chat Segura
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Esta es una aplicación de chat en tiempo real construida con React y TypeScript, diseñada para ofrecer comunicación segura con cifrado de extremo a extremo.
 
-Currently, two official plugins are available:
+## Características
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+*   **Mensajería en Tiempo Real:** Envía y recibe mensajes instantáneamente.
+*   **Autenticación de Usuario:** Sistema de inicio de sesión y registro seguro.
+*   **Cifrado de Extremo a Extremo:** Tus conversaciones están protegidas con cifrado avanzado.
+*   **Gestión de Conversaciones:** Visualiza y gestiona tus chats activos.
+*   **Búsqueda de Usuarios:** Encuentra y conecta con otros usuarios.
+*   **Indicadores de Estado:** Ve cuando otros usuarios están escribiendo.
 
-## Expanding the ESLint configuration
+## Tecnologías Utilizadas
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+*   **Frontend:** React, TypeScript, Vite
+*   **Estilos:** Tailwind CSS
+*   **Cifrado:** Web Crypto API, Double Ratchet Algorithm
+*   **Comunicación en Tiempo Real:** WebSockets (a través de Socket.IO u otra librería similar)
+*   **Gestión de Estado:** Context API (o similar)
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Configuración del Proyecto
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+Para configurar el proyecto en tu entorno local, sigue estos pasos:
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+1.  **Clona el repositorio:**
+    ```bash
+    git clone <URL_DEL_REPOSITORIO>
+    cd chat-app-front
+    ```
+
+2.  **Instala las dependencias:**
+    ```bash
+    npm install
+    # o si usas yarn
+    # yarn install
+    ```
+
+3.  **Configura las variables de entorno:**
+    Crea un archivo `.env` en la raíz del proyecto y añade las variables necesarias, como la URL de tu servidor backend. Ejemplo:
+    ```
+    VITE_API_BASE_URL=http://localhost:3000/api
+    VITE_WEBSOCKET_URL=ws://localhost:3000
+    ```
+    *(Asegúrate de reemplazar las URLs con las de tu backend real.)*
+
+## Ejecutar la Aplicación
+
+Para iniciar la aplicación en modo de desarrollo:
+
+```bash
+npm run dev
+# o si usas yarn
+# yarn dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Esto iniciará el servidor de desarrollo y la aplicación estará disponible en `http://localhost:5173` (o el puerto que Vite asigne).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Estructura del Proyecto
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+El proyecto sigue una estructura modular para facilitar el desarrollo y mantenimiento:
+
+```
+src/
+├── assets/             # Recursos estáticos como imágenes
+├── components/         # Componentes reutilizables de la UI
+├── contexts/           # Contextos de React para gestión de estado global (Auth, Crypto, Socket, Theme)
+├── crypto/             # Lógica de cifrado y gestión de claves
+├── hooks/              # Hooks personalizados de React
+├── pages/              # Páginas principales de la aplicación (Dashboard, Login, etc.)
+├── services/           # Servicios para interactuar con la API backend
+├── types/              # Definiciones de tipos TypeScript
+├── utils/              # Funciones de utilidad y helpers
+├── App.tsx             # Componente principal de la aplicación
+├── main.tsx            # Punto de entrada de la aplicación
+└── ...
 ```
