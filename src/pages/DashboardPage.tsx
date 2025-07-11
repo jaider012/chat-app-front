@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Plus, MessageCircle, ArrowLeft, Menu, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../contexts/SocketContext';
@@ -60,17 +60,17 @@ const DashboardPage: React.FC = () => {
         }
       };
       
-      const wrappedHandleUserTyping = (data: { userId: string }) => {
+      const wrappedHandleUserTyping = (_data: { userId: string }) => {
         try {
-          handleUserTyping(data);
+          handleUserTyping();
         } catch (error) {
           console.error('Error in userTyping handler:', error);
         }
       };
       
-      const wrappedHandleUserStoppedTyping = (data: { userId: string }) => {
+      const wrappedHandleUserStoppedTyping = (_data: { userId: string }) => {
         try {
-          handleUserStoppedTyping(data);
+          handleUserStoppedTyping();
         } catch (error) {
           console.error('Error in userStoppedTyping handler:', error);
         }
@@ -94,7 +94,15 @@ const DashboardPage: React.FC = () => {
     }
   }, [selectedConversationId]);
 
-  const loadConversations = async () => {
+  const sortConversations = useCallback((conversations: Conversation[]) => {
+    return conversations.sort((a, b) => {
+      const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      return timeB - timeA;
+    });
+  }, []);
+
+  const loadConversations = useCallback(async () => {
     try {
       console.log('Loading conversations...');
       const response = await apiService.getConversations();
