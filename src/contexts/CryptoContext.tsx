@@ -4,7 +4,7 @@ import React, {
   useEffect,
   useState,
   useCallback,
-  ReactNode,
+  type ReactNode,
 } from "react";
 import { CryptoManager } from "../crypto/CryptoManager";
 import {
@@ -261,36 +261,33 @@ export const CryptoProvider: React.FC<CryptoProviderProps> = ({ children }) => {
 
   // Set up event listeners for crypto manager
   useEffect(() => {
-    const handleStatusChange = ({
-      conversationId,
-      status,
-    }: {
-      conversationId: string;
-      status: EncryptionStatus;
-    }) => {
+    const handleStatusChange = (data?: unknown) => {
+      const { conversationId, status } = data as {
+        conversationId: string;
+        status: EncryptionStatus;
+      };
       setEncryptionStatus((prev) => new Map(prev).set(conversationId, status));
     };
 
-    const handleKeyExchangeCompleted = ({
-      conversationId,
-    }: {
-      conversationId: string;
-    }) => {
+    const handleKeyExchangeCompleted = (data?: unknown) => {
+      const { conversationId } = data as {
+        conversationId: string;
+      };
       const state = cryptoManager.getConversationState(conversationId);
       if (state) {
         setConversationKeys((prev) => new Map(prev).set(conversationId, state));
       }
     };
 
-    const handleError = (error: CryptoError) => {
+    const handleError = (data?: unknown) => {
+      const error = data as CryptoError;
       setError(error);
     };
 
-    const handleConversationCleared = ({
-      conversationId,
-    }: {
-      conversationId: string;
-    }) => {
+    const handleConversationCleared = (data?: unknown) => {
+      const { conversationId } = data as {
+        conversationId: string;
+      };
       setConversationKeys((prev) => {
         const newMap = new Map(prev);
         newMap.delete(conversationId);

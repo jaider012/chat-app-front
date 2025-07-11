@@ -3,6 +3,7 @@ import { Search, X, Loader2 } from 'lucide-react';
 import type { UserSearchModalProps } from '../types';
 import { useUserSearch } from '../hooks/useUserSearch';
 import { useModalKeyHandler } from '../hooks/useModalKeyHandler';
+import { getUserDisplayName } from '../utils/dataHelpers';
 
 const UserSearchModal: React.FC<UserSearchModalProps> = ({
   isOpen,
@@ -103,7 +104,7 @@ const UserSearchModal: React.FC<UserSearchModalProps> = ({
                     )}
                   </div>
                   <div className="flex-1 text-left">
-                    <p className="font-medium text-gray-900">{user.name}</p>
+                    <p className="font-medium text-gray-900">{getUserDisplayName(user)}</p>
                     <p className="text-sm text-gray-500">{user.email}</p>
                   </div>
                   {user.isOnline && (

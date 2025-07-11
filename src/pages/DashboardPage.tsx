@@ -5,7 +5,7 @@ import { useSocket } from '../contexts/SocketContext';
 import type { Conversation, Message } from '../types';
 import { apiService } from '../services/api';
 import { mockConversations, getMessagesByConversationId } from '../utils/mockData';
-import { normalizeConversation, normalizeMessage } from '../utils/dataHelpers';
+import { normalizeConversation, normalizeMessage, getUserDisplayName } from '../utils/dataHelpers';
 import ConversationList from '../components/ConversationList';
 import ChatWindow from '../components/ChatWindow';
 import ErrorBoundary from '../components/ErrorBoundary';
@@ -125,7 +125,7 @@ const DashboardPage: React.FC = () => {
       
       if (response.success && response.data) {
         // La API devuelve { items: [...], meta: {...} }
-        const messagesData = response.data.items || response.data;
+        const messagesData = (response.data as any).items || response.data;
         const normalizedMessages = Array.isArray(messagesData) 
           ? messagesData.map(normalizeMessage)
           : [];
@@ -266,7 +266,7 @@ const DashboardPage: React.FC = () => {
 
   const filteredConversations = conversations.filter(conv => {
     const otherParticipant = conv.participants.find(p => p.id !== user?.id);
-    return otherParticipant?.name.toLowerCase().includes(searchTerm.toLowerCase());
+    return getUserDisplayName(otherParticipant).toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   const selectedConversation = conversations.find(conv => conv.id === selectedConversationId);

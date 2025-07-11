@@ -187,7 +187,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   >
                     {message.timestamp || message.createdAt
                       ? formatMessageTime(
-                          message.timestamp || message.createdAt || ""
+                          (message.timestamp || message.createdAt)!
                         )
                       : "Just now"}
                   </div>

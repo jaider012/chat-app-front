@@ -2,8 +2,6 @@ import React from 'react';
 import { EncryptionStatus } from '../../crypto/types';
 import { useEncryption } from '../../hooks/useCrypto';
 import { 
-  encryptionStatusConfig, 
-  encryptionSizeConfig, 
   getEncryptionStatusConfig, 
   getEncryptionSizeConfig 
 } from '../../utils/encryptionHelpers';

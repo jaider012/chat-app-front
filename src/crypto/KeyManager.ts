@@ -2,7 +2,6 @@ import { WebCryptoUtils } from "./WebCryptoUtils";
 import type { UserKeyPair, StoredKey } from "./types";
 
 export class KeyManager {
-  private static readonly STORAGE_KEY = "chat-app-crypto-keys";
   private static readonly INDEXEDDB_NAME = "ChatAppCrypto";
   private static readonly INDEXEDDB_VERSION = 1;
   private static readonly STORE_NAME = "keys";

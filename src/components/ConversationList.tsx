@@ -42,7 +42,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
             <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
               {conversation.lastMessage && conversation.lastMessage.timestamp && (
                 <span className="text-xs text-gray-500">
-                  {formatMessageTime(conversation.lastMessage.timestamp)}
+                  {formatMessageTime(conversation.lastMessage.timestamp!)}
                 </span>
               )}
               {(conversation.unreadCount || 0) > 0 && (

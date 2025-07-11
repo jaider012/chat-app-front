@@ -131,7 +131,7 @@ export class MessageEncryption {
   }
 
   async deriveSubkey(
-    masterKey: CryptoKey,
+    _masterKey: CryptoKey,
     purpose: string,
     conversationId: string
   ): Promise<CryptoKey> {

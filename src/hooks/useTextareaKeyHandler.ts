@@ -4,7 +4,7 @@ interface UseTextareaKeyHandlerProps {
   onSubmit?: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   onEscape?: () => void;
   submitKey?: string;
-  modifier?: 'shift' | 'ctrl' | 'meta';
+  modifier?: 'Shift' | 'Control' | 'Meta';
 }
 
 /**
@@ -28,7 +28,7 @@ export const useTextareaKeyHandler = ({
     // Handle submit key
     if (event.key === submitKey && onSubmit) {
       const shouldSubmit = modifier 
-        ? event.getModifierState(modifier) || (modifier === 'shift' && event.shiftKey) || (modifier === 'ctrl' && event.ctrlKey) || (modifier === 'meta' && event.metaKey)
+        ? event.getModifierState(modifier) || (modifier === 'Shift' && event.shiftKey) || (modifier === 'Control' && event.ctrlKey) || (modifier === 'Meta' && event.metaKey)
         : !event.shiftKey; // Default: submit on Enter without Shift
 
       if (shouldSubmit) {

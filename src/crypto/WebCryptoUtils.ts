@@ -1,4 +1,4 @@
-import { encode, decode } from 'tweetnacl-util';
+import * as util from 'tweetnacl-util';
 
 export class WebCryptoUtils {
   static async generateKeyPair(): Promise<CryptoKeyPair> {
@@ -14,11 +14,11 @@ export class WebCryptoUtils {
 
   static async exportPublicKey(key: CryptoKey): Promise<string> {
     const exported = await window.crypto.subtle.exportKey('raw', key);
-    return encode(new Uint8Array(exported));
+    return util.encodeBase64(new Uint8Array(exported));
   }
 
   static async importPublicKey(keyData: string): Promise<CryptoKey> {
-    const keyBuffer = decode(keyData);
+    const keyBuffer = util.decodeBase64(keyData);
     return await window.crypto.subtle.importKey(
       'raw',
       keyBuffer,
@@ -93,11 +93,11 @@ export class WebCryptoUtils {
   }
 
   static arrayBufferToBase64(buffer: ArrayBuffer): string {
-    return encode(new Uint8Array(buffer));
+    return util.encodeBase64(new Uint8Array(buffer));
   }
 
   static base64ToArrayBuffer(base64: string): ArrayBuffer {
-    return decode(base64).buffer;
+    return util.decodeBase64(base64).buffer;
   }
 
   static async exportKeyAsBase64(key: CryptoKey): Promise<string> {

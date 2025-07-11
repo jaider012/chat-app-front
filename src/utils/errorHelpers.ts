@@ -24,7 +24,7 @@ export const logError = (error: Error, errorInfo?: any) => {
 
   // Here you could send error to external logging service
   // Example: Sentry, LogRocket, etc.
-  if (process.env.NODE_ENV === 'production') {
+  if (import.meta.env.PROD) {
     // logToExternalService(error, errorInfo);
   }
 };
