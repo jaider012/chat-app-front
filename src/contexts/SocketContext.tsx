@@ -4,6 +4,7 @@ import type { SocketContextType } from '../types';
 import { useAuth } from './AuthContext';
 import { useCryptoContext } from './CryptoContext';
 import { type EncryptedMessage, EncryptionStatus } from '../crypto/types';
+import { API_BASE_URL } from '../services/api';
 
 const SocketContext = createContext<SocketContextType | null>(null);
 
@@ -27,7 +28,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
   useEffect(() => {
     if (isAuthenticated && token) {
-      const newSocket = io('http://localhost:3006', {
+      const newSocket = io(API_BASE_URL, {
         auth: {
           token,
         },

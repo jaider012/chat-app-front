@@ -1,6 +1,6 @@
 import type { User, Conversation, Message, ApiResponse } from "../types";
 
-const API_BASE_URL = "https://chat-1-1-dev-nes-996417519964.us-east1.run.app/api";
+export const API_BASE_URL = "https://chat-1-1-dev-nes-996417519964.us-east1.run.app/api";
 
 class ApiService {
   private token: string | null = null;
