@@ -28,7 +28,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
   useEffect(() => {
     if (isAuthenticated && token) {
-      const newSocket = io(API_BASE_URL, {
+      const newSocket = io("https://chat-1-1-dev-nes-996417519964.us-east1.run.app/", {
         auth: {
           token,
         },
