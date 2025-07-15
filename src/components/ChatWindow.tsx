@@ -254,7 +254,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 handleStopTyping();
               }}
               placeholder={isSecure ? "Type an encrypted message..." : "Type a message..."}
-              className="w-full resize-none rounded-lg border border-gray-300 px-3 sm:px-4 py-2 sm:py-3 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent max-h-32 text-sm sm:text-base pr-10"
+              className="w-full resize-none rounded-lg border border-gray-300 dark:border-gray-700 px-3 sm:px-4 py-2 sm:py-3 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent max-h-32 text-sm sm:text-base pr-10 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
               rows={1}
               style={{ minHeight: "44px" }}
             />
